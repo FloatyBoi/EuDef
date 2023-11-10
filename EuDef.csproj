@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-01875" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-01875" />
-    <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-01875" />
+    <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-01877" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-01877" />
+    <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-01877" />
   </ItemGroup>
 
 </Project>
