@@ -1,9 +1,14 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -112,6 +117,125 @@ namespace EuDef
             var text = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory() + "//" + guildID, "divider_roles.txt"));
             ulong[] dividerRoleIds = Array.ConvertAll(text.Split(Environment.NewLine), s => ulong.Parse(s));
             return dividerRoleIds;
+        }
+
+        /*
+        =====================================================================================================================================================================================
+         Generic helpers
+        =====================================================================================================================================================================================
+        */
+
+        public static async Task<DateTime> CheckTimeAndDate(InteractionContext ctx, InteractivityResult<DSharpPlus.EventArgs.ModalSubmitEventArgs> response)
+        {
+            var modal = new DiscordInteractionResponseBuilder()
+                .WithCustomId($"id-invalid-time-and-date-{ctx.InteractionId}")
+                .WithTitle("Zeitformat Invalide")
+                .WithContent("Bitte gieb das Zeitformat erneut ein")
+                .AddComponents(new TextInputComponent(label: "Datum und Uhrzeit [12.01.2000,19:30]", placeholder: "12.01.2000,19:30", customId: "id-timeanddate", style: TextInputStyle.Short));
+
+            bool repeat = false;
+            DateTime timeAndDate = DateTime.MinValue;
+            do
+            {
+                repeat = false;
+
+                try
+                {
+                    string timeAndDateString = response.Result.Values["id-timeanddate"];
+
+                    timeAndDate = DateTime.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+
+
+                    if (timeAndDate < DateTime.Now)
+                    {
+                        repeat = true;
+                    }
+                }
+
+                catch
+                {
+                    repeat = true;
+                }
+
+                if (repeat)
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.Modal, modal);
+
+                    var interactivity = ctx.Client.GetInteractivity();
+                    response = await interactivity.WaitForModalAsync($"id-invalid-time-and-date-{ctx.InteractionId}", user: ctx.User, timeoutOverride: TimeSpan.FromSeconds(1800));
+                }
+
+            } while (repeat);
+
+            return timeAndDate;
+        }
+
+        public static async void NotifyRole(InteractionContext ctx, DiscordRole role, string message, string? eventName, DiscordMessage? Message, bool editMessage, DiscordScheduledGuildEvent? discordEvent)
+        {
+            try
+            {
+                int messagesSent = 0;
+                foreach (var member in ctx.Guild.Members.Values)
+                {
+
+                    var notifyEmbed = new DiscordEmbedBuilder()
+                                .WithDescription(message)
+                                .WithTitle("Neue Nachricht");
+
+                    if (!editMessage && discordEvent != null)
+                    {
+                        notifyEmbed.WithTitle($"Neues Event: {eventName}").AddField("Link", $"Nachricht: {Message.JumpLink}\nEvent: https://discord.com/events/{discordEvent.Guild.Id}/{discordEvent.Id}").WithColor(DiscordColor.Green);
+                    }
+                    else if (!editMessage)
+                    {
+                        notifyEmbed.WithTitle($"Neues Event: {eventName}").AddField("Link", $"Nachricht: {Message.JumpLink}\n").WithColor(DiscordColor.Green);
+                    }
+
+                    foreach (var userRole in member.Roles)
+                    {
+                        if (member.IsBot)
+                            break;
+                        if (userRole == role && !member.IsBot)
+                        {
+                            try
+                            {
+                                await member.SendMessageAsync(embed: notifyEmbed);
+                            }
+                            catch (UnauthorizedException badBoy)
+                            {
+                                Console.WriteLine(member.DisplayName + " has Direct Messages turned off :(");
+
+                                var embedBad = new DiscordEmbedBuilder()
+                                    .WithColor(DiscordColor.Gray)
+                                    .WithTitle("Couldn't send direct message (Turned off / blocked)")
+                                    .WithDescription(member.Mention)
+                                    .AddField("Error message", badBoy.Message);
+
+                                await ctx.Guild.GetChannel(GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(embedBad);
+                            }
+                            messagesSent++;
+                            break;
+                        }
+                    }
+                }
+                if (editMessage)
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Sent " + messagesSent + " messages to " + role.Mention));
+
+                var embed = new DiscordEmbedBuilder();
+                embed.AddField("Sent to", role.Mention)
+                        .WithAuthor(ctx.Member.Username, ctx.Member.BannerUrl, ctx.Member.AvatarUrl)
+                        .WithTitle("Notifications sent")
+                        .WithDescription(messagesSent + " user(s) notified")
+                        .WithColor(DiscordColor.Green)
+                        .AddField("Message", message);
+
+                var mess = await ctx.Guild.GetChannel(GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(embed: embed);
+
+            }
+            catch (Exception e)
+            {
+                ErrorHandler.HandleError(e, ctx.Guild, ErrorHandler.ErrorType.Error);
+            }
         }
     }
 }

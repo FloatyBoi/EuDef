@@ -93,13 +93,6 @@ namespace EuDef
                     await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Rolle entfernt: " + role.Mention).AsEphemeral());
                 }
             }
-
-            //No match, report error
-            else
-            {
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Error! Es wurde kein passender Knopf gefunden. Das solltest du nicht sehen...").AsEphemeral());
-                ErrorHandler.HandleError(new Exception("Button Type not found!"), null, ErrorHandler.ErrorType.Error);
-            }
         }
 
         private static async Task ClientErrored(ClientErrorEventArgs e)
