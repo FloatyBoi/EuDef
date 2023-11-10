@@ -1,4 +1,5 @@
 ﻿using DSharpPlus;
+using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
@@ -44,11 +45,24 @@ namespace EuDef
             //Command Registering
             if (debug)
                 slash.RegisterCommands<SlashCommands>(1006898069792632923);
-            slash.RegisterCommands<SlashCommands>(1154741242320658493);
+            else
+                slash.RegisterCommands<SlashCommands>(1154741242320658493);
 
             Console.WriteLine(Directory.GetCurrentDirectory());
 
-            //TODO: Die ganzen Events regeln (discordClient.On...)
+            ClientEvents.RegisterClientEvents(discordClient, slash);
+
+            discordClient.UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
+            {
+                PollBehaviour = DSharpPlus.Interactivity.Enums.PollBehaviour.KeepEmojis,
+                Timeout = TimeSpan.FromSeconds(30)
+            });
+
+            await discordClient.ConnectAsync();
+
+            Console.WriteLine("##################################################\nSetup Complete! Running...\n##################################################");
+
+            await Task.Delay(-1);
 
         }
     }

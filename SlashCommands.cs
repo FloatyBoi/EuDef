@@ -9,5 +9,6 @@ namespace EuDef
 {
     internal class SlashCommands : ApplicationCommandModule
     {
+
     }
 }
