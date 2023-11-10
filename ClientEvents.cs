@@ -9,7 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Data;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,7 +26,85 @@ namespace EuDef
             client.GuildMemberRemoved += async (s, e) => await GuildMemberRemoved(e);
             client.ComponentInteractionCreated += async (s, e) => await ComponentInteractionCreated(e);
             client.ClientErrored += async (s, e) => await ClientErrored(e);
+            client.ModalSubmitted += async (s, e) => await ModalSubmitted(e);
             slash.SlashCommandErrored += async (s, e) => await SlashCommandErrored(e);
+        }
+
+        private static async Task ModalSubmitted(ModalSubmitEventArgs e)
+        {
+            //Modal.WithCustomId($"{buttonId}_eventCreateUpdate_{buttonType}")
+
+            //NOTE: ONLY WORKS FOR EVENT CREATION UPDATE MODALS AS OF RIGHT NOW
+
+            var customID = e.Interaction.Data.CustomId;
+
+            if (!customID.Contains('_'))
+                return;
+
+            var interactionId = customID.Substring(0, customID.IndexOf('_'));
+            var buttonType = customID.Substring(customID.LastIndexOf('_') + 1);
+
+            var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//messageId.txt");
+            var message = e.Interaction.Guild.GetChannel(Helpers.GetBotChannelID(e.Interaction.Guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+
+            var embed = new DiscordEmbedBuilder(message.Embeds[0]);
+
+            if (buttonType == "addTitle")
+            {
+                embed.WithTitle(e.Values["id-title"]);
+
+                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                    .AddEmbed(embed)
+                    .AddComponents(message.Components));
+            }
+
+            if (buttonType == "addDescription")
+            {
+                embed.Fields[1].Value = (e.Values["id-description"]);
+
+                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                    .AddEmbed(embed)
+                    .AddComponents(message.Components));
+            }
+
+            if (buttonType == "addDateTime")
+            {
+                try
+                {
+                    //Checks whether or not its a valid format
+                    var timeAndDateString = e.Values["id-datetime"];
+                    var timeAndDate = DateTime.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    var timeAndDateOffset = DateTimeOffset.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+
+                    if (timeAndDate < DateTime.Now)
+                    {
+                        throw new Exception();
+                    }
+
+                    embed.Fields[0].Value = timeAndDateString;
+
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                    .AddEmbed(embed)
+                    .AddComponents(message.Components));
+                }
+                catch
+                {
+                    var errorEmbed = new DiscordEmbedBuilder()
+                        .WithColor(DiscordColor.Red)
+                        .WithDescription("Falsches Datum/Zeit-Format");
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(errorEmbed).AsEphemeral());
+                }
+            }
+
+            if (buttonType == "addNotifyMessage")
+            {
+                embed.Fields[2].Value = (e.Values["id-notify"]);
+
+                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                    .AddEmbed(embed)
+                    .AddComponents(message.Components));
+            }
+
         }
 
         private static async Task GuildMemberAdded(GuildMemberAddEventArgs e)
@@ -74,6 +154,9 @@ namespace EuDef
             //Event related
             if (buttonType == "status" || buttonType == "signup" || buttonType == "signoff" || buttonType == "undecided")
                 EventFunctions.HandleEventRegistration(e, buttonType, Id);
+
+            if (buttonType == "addTitle" || buttonType == "addDescription" || buttonType == "addDateTime" || buttonType == "addNotifyMessage" || buttonType == "createEvent" || buttonType == "cancelEvent")
+                EventFunctions.HandleEventCreationUpdate(buttonType, Id, e);
 
             //Role granting
             if (buttonType == "rolebutton")

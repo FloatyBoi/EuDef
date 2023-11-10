@@ -16,17 +16,6 @@ namespace EuDef
 {
     public class SlashCommands : ApplicationCommandModule
     {
-        public enum SendNotificationsEnum
-        {
-            SendNotificantions,
-            NoNotifications
-        }
-
-        public enum CreateEventEnum
-        {
-            CreateEvent,
-            NoEvent
-        }
 
         [SlashCommand("notify", "Notify specified Role")]
         [SlashCommandPermissions(Permissions.Administrator)]
@@ -71,310 +60,214 @@ namespace EuDef
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Notifications sent!"));
         }
 
-        [SlashCommand("create", "Create a new event")]
-        [SlashCommandPermissions(Permissions.Administrator)]
-        public async Task Create(InteractionContext ctx, [Option("mention", "Who to mention")] DiscordRole notifyRole, [Option("notify", "Automatically send notifications?")] SendNotificationsEnum sendNotifications, [Option("event", "Create Event?")] CreateEventEnum createEvent)
+        [SlashCommandGroup("event", "Event management")]
+
+        public class Event
         {
-            var modal = new DiscordInteractionResponseBuilder()
-                .WithTitle("Create Event")
-                .WithCustomId($"id-event-create-{ctx.InteractionId}")
-                .AddComponents(new TextInputComponent(label: "Name", customId: "id-name", style: TextInputStyle.Short))
-                .AddComponents(new TextInputComponent(label: "Beschreibung", customId: "id-description", style: TextInputStyle.Paragraph))
-                .AddComponents(new TextInputComponent(label: "Datum und Uhrzeit [12.01.2000,19:30]", placeholder: "12.01.2000,19:30", customId: "id-timeanddate", style: TextInputStyle.Short));
 
-            if (sendNotifications == SendNotificationsEnum.SendNotificantions)
-                modal.AddComponents(new TextInputComponent(label: "/notify Nachricht", customId: "id-notify", style: TextInputStyle.Paragraph));
-
-
-
-            await ctx.CreateResponseAsync(InteractionResponseType.Modal, modal);
-
-            var interactivity = ctx.Client.GetInteractivity();
-            var response = await interactivity.WaitForModalAsync($"id-event-create-{ctx.InteractionId}", user: ctx.User, timeoutOverride: TimeSpan.FromSeconds(1800));
-
-            if (!response.TimedOut)
+            [SlashCommand("create", "Start the event builder")]
+            [SlashCommandPermissions(Permissions.Administrator)]
+            public async Task Create(InteractionContext ctx)
             {
-                await response.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Creating Event").AsEphemeral());
-                var embed = new DiscordEmbedBuilder();
-                embed
-                    .WithTitle(response.Result.Values["id-name"])
-                    .WithDescription(response.Result.Values["id-description"]);
-
-                var signUpButton = new DiscordButtonComponent(
-                    ButtonStyle.Success,
-                    ctx.InteractionId + "_signup",
-                    "Anmelden"
-                    );
-
-                var signOffButton = new DiscordButtonComponent(
-                    ButtonStyle.Danger,
-                    ctx.InteractionId + "_signoff",
-                    "Abmelden"
-                    );
-
-                var undecidedButton = new DiscordButtonComponent(
-                    ButtonStyle.Primary,
-                    ctx.InteractionId + "_undecided",
-                    "Unentschieden"
-                    );
-
-                var statusButton = new DiscordButtonComponent(
-                    ButtonStyle.Secondary,
-                    ctx.InteractionId + "_status",
-                    "Status");
-
-                var buttons = new DiscordComponent[]
+                if (ctx.Channel.Id != Helpers.GetBotChannelID(ctx.Guild.Id))
                 {
-                    signUpButton,
-                    signOffButton,
-                    undecidedButton,
-                    statusButton
-                };
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Bitte im Bot-Kanal ausführen! " + ctx.Guild.GetChannel(Helpers.GetBotChannelID(ctx.Guild.Id)).Mention).AsEphemeral());
+                    return;
+                }
 
-                //Getting Time and Date for event
+                var addTitleButton = new DiscordButtonComponent(
+                    ButtonStyle.Secondary,
+                    $"{ctx.InteractionId}_addTitle",
+                    "Titel"
+                    );
+                var addDescriptionButton = new DiscordButtonComponent(
+                    ButtonStyle.Secondary,
+                    $"{ctx.InteractionId}_addDescription",
+                    "Beschreibung"
+                    );
+                var addDateTimeButton = new DiscordButtonComponent(
+                    ButtonStyle.Secondary,
+                    $"{ctx.InteractionId}_addDateTime",
+                    "Datum"
+                    );
+                var addNotifyMessageButton = new DiscordButtonComponent(
+                    ButtonStyle.Secondary,
+                    $"{ctx.InteractionId}_addNotifyMessage",
+                    "Benachrichtigung"
+                    );
+                var addCreateEventButton = new DiscordButtonComponent(
+                    ButtonStyle.Success,
+                    $"{ctx.InteractionId}_createEvent",
+                    "Erstellen"
+                    );
+                var addCancelEventButton = new DiscordButtonComponent(
+                    ButtonStyle.Danger,
+                    $"{ctx.InteractionId}_cancelEvent",
+                    "Abbrechen"
+                    );
 
-                DateTimeOffset timeAndDateOffset = DateTimeOffset.MinValue;
+                var embed = new DiscordEmbedBuilder()
+                    .WithTitle("Platzhalter")
+                    .AddField("Datum", "Platzhalter")
+                    .AddField("Beschreibung", "Platzhalter")
+                    .AddField("Benachrichtigungstext", "Platzhalter");
 
-                DateTime timeAndDate = await Helpers.CheckTimeAndDate(ctx, response);
+                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddComponents(addTitleButton, addDescriptionButton, addDateTimeButton, addNotifyMessageButton).AddComponents(addCreateEventButton, addCancelEventButton).AddEmbed(embed));
 
-                string timeAndDateString = timeAndDateString = response.Result.Values["id-timeanddate"];
-                timeAndDateOffset = DateTimeOffset.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                //Caching
+                Directory.CreateDirectory(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache");
+                Directory.CreateDirectory(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}");
+                File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//channelId.txt", ctx.Channel.Id.ToString());
+                File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//messageId.txt", ctx.GetOriginalResponseAsync().Result.Id.ToString());
 
+            }
 
-                //Creating Event
-                DiscordForumChannel forumChannel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
-                DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"{response.Result.Values["id-name"]}").WithMessage(new DiscordMessageBuilder().WithContent(notifyRole.Mention).WithAllowedMentions(new IMention[] { new RoleMention(notifyRole) }).WithEmbed(embed: embed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
-
-                //Pin Message
-                await forumPost.Message.PinAsync();
-
-                Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events");
-                Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}");
-                StreamWriter writer = new StreamWriter((Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + "//forumPostID.txt"));
-                writer.WriteLine(forumPost.Channel.Id);
-                writer.Dispose();
-
-                string signupPath = Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + $"//signup.txt";
-                string signoffPath = Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + $"//signoff.txt";
-                string undecidedPath = Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + $"//undecided.txt";
-                FileStream file;
-                file = File.Create(signupPath);
-                file.Close();
-                file = File.Create(signoffPath);
-                file.Close();
-                file = File.Create(undecidedPath);
-                file.Dispose();
-
-                var createEmbed = new DiscordEmbedBuilder()
-                    .WithAuthor(ctx.Member.Username, ctx.Member.BannerUrl, ctx.Member.AvatarUrl)
-                    .WithTitle("Event Created")
-                    .WithDescription(response.Result.Values["id-name"])
-                    .AddField("Link", $"{forumPost.Message.JumpLink}")
-                    .WithColor(DiscordColor.Aquamarine);
-
-                await ctx.Guild.GetChannel(Helpers.GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(embed: createEmbed);
+            [SlashCommand("edit", "Edit event")]
+            [SlashCommandPermissions(Permissions.Administrator)]
+            public async Task Modify(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
+            {
+                DiscordMessage message;
+                DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
                 try
                 {
-                    if (createEvent == CreateEventEnum.CreateEvent)
-                    {
-                        DiscordScheduledGuildEvent discordEvent = null;
-                        try
-                        {
-                            discordEvent = await ctx.Guild.CreateEventAsync(name: response.Result.Values["id-name"], description: $"{forumPost.Message.JumpLink}", channelId: Helpers.GetMeetingPointID(ctx.Guild.Id), type: ScheduledGuildEventType.VoiceChannel, privacyLevel: ScheduledGuildEventPrivacyLevel.GuildOnly, start: timeAndDateOffset, end: timeAndDateOffset.AddHours(2));
-                        }
-                        catch (BadRequestException e)
-                        {
-                            ErrorHandler.HandleError(e, ctx.Guild, ErrorHandler.ErrorType.Warning);
-                        }
-                        if (sendNotifications == SendNotificationsEnum.SendNotificantions)
-                        {
-                            var notifyMessage = response.Result.Values["id-notify"];
-
-                            Helpers.NotifyRole(ctx, notifyRole, notifyMessage, response.Result.Values["id-name"], forumPost.Message, false, discordEvent);
-                        }
-                    }
-
-                    else
-                    {
-                        if (sendNotifications == SendNotificationsEnum.SendNotificantions)
-                        {
-                            var notifyMessage = response.Result.Values["id-notify"];
-
-                            Helpers.NotifyRole(ctx, notifyRole, notifyMessage, response.Result.Values["id-name"], forumPost.Message, false, null);
-                        }
-                    }
-
+                    DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
+                    message = threadChannel.GetPinnedMessagesAsync().Result.First();
                 }
-                catch (Exception wellShit)
+                catch
                 {
-                    ErrorHandler.HandleError(wellShit, ctx.Guild, ErrorHandler.ErrorType.Error);
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
+                    return;
                 }
 
-                //Create File with time
-                File.WriteAllText(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + $"//startTimeForCollection.txt", response.Result.Values["id-timeanddate"]);
-                //Create File for undecided reminder
-                DateTime onedaybefore;
-                if (timeAndDate.AddDays(-1) > DateTime.Now)
-                {
-                    onedaybefore = timeAndDate.AddDays(-1);
-                }
-                else
-                {
-                    onedaybefore = timeAndDate;
-                }
+                var modal = new DiscordInteractionResponseBuilder()
+                    .WithTitle("Create Event")
+                    .WithCustomId($"id-event-create-{ctx.InteractionId}")
+                    .AddComponents(new TextInputComponent(label: "Name", customId: "id-name", value: message.Embeds[0].Title, style: TextInputStyle.Short))
+                    .AddComponents(new TextInputComponent(label: "Beschreibung", value: message.Embeds[0].Description, customId: "id-description", style: TextInputStyle.Paragraph));
 
-                File.WriteAllText(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id + "//Events" + $"//{ctx.InteractionId}" + $"//remindUndecided.txt", $"{onedaybefore.ToString("dd.MM.yyyy,HH:mm")}");
-
-            }
-
-        }
-
-        [SlashCommand("edit", "Edit event")]
-        [SlashCommandPermissions(Permissions.Administrator)]
-        public async Task Modify(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
-        {
-            DiscordMessage message;
-            DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
-            try
-            {
-                DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                message = threadChannel.GetPinnedMessagesAsync().Result.First();
-            }
-            catch
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
-                return;
-            }
-
-            var modal = new DiscordInteractionResponseBuilder()
-                .WithTitle("Create Event")
-                .WithCustomId($"id-event-create-{ctx.InteractionId}")
-                .AddComponents(new TextInputComponent(label: "Name", customId: "id-name", value: message.Embeds[0].Title, style: TextInputStyle.Short))
-                .AddComponents(new TextInputComponent(label: "Beschreibung", value: message.Embeds[0].Description, customId: "id-description", style: TextInputStyle.Paragraph));
-
-            await ctx.CreateResponseAsync(InteractionResponseType.Modal, modal);
-            var interactivity = ctx.Client.GetInteractivity();
-            var response = await interactivity.WaitForModalAsync($"id-event-create-{ctx.InteractionId}", user: ctx.User, timeoutOverride: TimeSpan.FromSeconds(1800));
-            var embedBuilder = new DiscordEmbedBuilder();
-            embedBuilder
-                .WithTitle(response.Result.Values["id-name"])
-                .WithDescription(response.Result.Values["id-description"]);
-            var embed = embedBuilder.Build();
-            await message.ModifyAsync(message.Content, embed: embed);
-
-            await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => x.Name = embed.Title);
-
-            await response.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Editing Event").AsEphemeral());
-        }
-
-        [SlashCommand("close", "Closes all interactions with this event")]
-        [SlashCommandPermissions(Permissions.Administrator)]
-        public async Task Close(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
-        {
-            DiscordMessage eventMessage;
-            DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
-            try
-            {
-                DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                eventMessage = threadChannel.GetPinnedMessagesAsync().Result.First();
-            }
-            catch
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
-                return;
-            }
-
-            if (File.Exists(Helpers.GetFileDirectoryWithContent(ctx, eventMessage.Id.ToString()) + "closed.txt"))
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Event is already closed"));
-                return;
-            }
-
-            await ctx.DeferAsync(ephemeral: true);
-
-            string directory = Helpers.GetFileDirectoryWithContent(ctx, eventMessage.Id.ToString());
-
-            if (directory == "null")
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Event doesn't exist"));
-            else
-            {
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Closing Event"));
-                File.Create(directory + "closed.txt").Close();
-
-                var eventEmbed = new DiscordEmbedBuilder();
-                eventEmbed
-                    .WithAuthor(ctx.Member.DisplayName, ctx.Member.AvatarUrl, ctx.Member.AvatarUrl)
-                    .WithColor(DiscordColor.Orange)
-                    .WithTitle("Event Closed")
-                    .WithDescription(eventMessage.Embeds[0].Title)
-                    .AddField("Link", $"{eventMessage.JumpLink}");
-
-                await ctx.Guild.GetChannel(Helpers.GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(eventEmbed);
-
-
-                DiscordMessage message = eventMessage;
-
+                await ctx.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                var interactivity = ctx.Client.GetInteractivity();
+                var response = await interactivity.WaitForModalAsync($"id-event-create-{ctx.InteractionId}", user: ctx.User, timeoutOverride: TimeSpan.FromSeconds(1800));
                 var embedBuilder = new DiscordEmbedBuilder();
                 embedBuilder
-                    .WithTitle("[GESCHLOSSEN] " + message.Embeds[0].Title)
-                    .WithDescription(message.Embeds[0].Description);
+                    .WithTitle(response.Result.Values["id-name"])
+                    .WithDescription(response.Result.Values["id-description"]);
                 var embed = embedBuilder.Build();
                 await message.ModifyAsync(message.Content, embed: embed);
 
-                await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = "[GESCHLOSSEN] " + Helpers.GetThreadChannelByID(channel, id).Name; x.IsArchived = true; x.Locked = true; });
+                await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => x.Name = embed.Title);
+
+                await response.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Editing Event").AsEphemeral());
+            }
+
+            [SlashCommand("close", "Closes all interactions with this event")]
+            [SlashCommandPermissions(Permissions.Administrator)]
+            public async Task Close(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
+            {
+                DiscordMessage eventMessage;
+                DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
+                try
+                {
+                    DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
+                    eventMessage = threadChannel.GetPinnedMessagesAsync().Result.First();
+                }
+                catch
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
+                    return;
+                }
+
+                if (File.Exists(Helpers.GetFileDirectoryWithContent(ctx, eventMessage.Id.ToString()) + "closed.txt"))
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Event is already closed"));
+                    return;
+                }
+
+                await ctx.DeferAsync(ephemeral: true);
+
+                string directory = Helpers.GetFileDirectoryWithContent(ctx, eventMessage.Id.ToString());
+
+                if (directory == "null")
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Event doesn't exist"));
+                else
+                {
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Closing Event"));
+                    File.Create(directory + "closed.txt").Close();
+
+                    var eventEmbed = new DiscordEmbedBuilder();
+                    eventEmbed
+                        .WithAuthor(ctx.Member.DisplayName, ctx.Member.AvatarUrl, ctx.Member.AvatarUrl)
+                        .WithColor(DiscordColor.Orange)
+                        .WithTitle("Event Closed")
+                        .WithDescription(eventMessage.Embeds[0].Title)
+                        .AddField("Link", $"{eventMessage.JumpLink}");
+
+                    await ctx.Guild.GetChannel(Helpers.GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(eventEmbed);
+
+
+                    DiscordMessage message = eventMessage;
+
+                    var embedBuilder = new DiscordEmbedBuilder();
+                    embedBuilder
+                        .WithTitle("[GESCHLOSSEN] " + message.Embeds[0].Title)
+                        .WithDescription(message.Embeds[0].Description);
+                    var embed = embedBuilder.Build();
+                    await message.ModifyAsync(message.Content, embed: embed);
+
+                    await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = "[GESCHLOSSEN] " + Helpers.GetThreadChannelByID(channel, id).Name; x.IsArchived = true; x.Locked = true; });
+                }
+            }
+            [SlashCommand("reopen", "Reopens an Event")]
+            [SlashCommandPermissions(Permissions.Administrator)]
+            public async Task ReOpen(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
+            {
+                DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
+                DiscordMessage message;
+                try
+                {
+                    DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
+                    message = threadChannel.GetPinnedMessagesAsync().Result.First();
+                }
+                catch
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
+                    return;
+                }
+
+                if (!File.Exists(Helpers.GetFileDirectoryWithContent(ctx, message.Id.ToString()) + "closed.txt"))
+                {
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Event is already open"));
+                    return;
+                }
+
+
+                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Opening Event").AsEphemeral());
+                var directory = Helpers.GetFileDirectoryWithContent(ctx, message.Id.ToString());
+                File.Delete(directory + "closed.txt");
+
+                var embed = new DiscordEmbedBuilder();
+                embed
+                    .WithAuthor(ctx.Member.DisplayName, ctx.Member.AvatarUrl, ctx.Member.AvatarUrl)
+                    .WithColor(DiscordColor.Orange)
+                    .WithTitle("Event Opened")
+                    .WithDescription(message.Embeds[0].Title)
+                    .AddField("Link", $"{message.JumpLink}");
+
+                await ctx.Guild.GetChannel(Helpers.GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(embed);
+
+                DiscordMessage mess = message;
+
+                await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.IsArchived = false; x.Locked = false; });
+                await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = Helpers.GetThreadChannelByID(channel, id).Name.Replace("[GESCHLOSSEN] ", ""); });
+
+                var embedBuilder = new DiscordEmbedBuilder();
+                embedBuilder
+                    .WithTitle(mess.Embeds[0].Title.Replace("[GESCHLOSSEN] ", ""))
+                    .WithDescription(mess.Embeds[0].Description);
+                var emb = embedBuilder.Build();
+                await mess.ModifyAsync(mess.Content, embed: emb);
             }
         }
-        [SlashCommand("reopen", "Reopens an Event")]
-        [SlashCommandPermissions(Permissions.Administrator)]
-        public async Task ReOpen(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
-        {
-            DiscordForumChannel channel = (DiscordForumChannel)ctx.Guild.GetChannel(Helpers.GetEventForumID(ctx.Guild.Id));
-            DiscordMessage message;
-            try
-            {
-                DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                message = threadChannel.GetPinnedMessagesAsync().Result.First();
-            }
-            catch
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event doesn't exist. Check your Thread ID").AsEphemeral());
-                return;
-            }
-
-            if (!File.Exists(Helpers.GetFileDirectoryWithContent(ctx, message.Id.ToString()) + "closed.txt"))
-            {
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Event is already open"));
-                return;
-            }
-
-
-            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Opening Event").AsEphemeral());
-            var directory = Helpers.GetFileDirectoryWithContent(ctx, message.Id.ToString());
-            File.Delete(directory + "closed.txt");
-
-            var embed = new DiscordEmbedBuilder();
-            embed
-                .WithAuthor(ctx.Member.DisplayName, ctx.Member.AvatarUrl, ctx.Member.AvatarUrl)
-                .WithColor(DiscordColor.Orange)
-                .WithTitle("Event Opened")
-                .WithDescription(message.Embeds[0].Title)
-                .AddField("Link", $"{message.JumpLink}");
-
-            await ctx.Guild.GetChannel(Helpers.GetLogChannelID(ctx.Guild.Id)).SendMessageAsync(embed);
-
-            DiscordMessage mess = message;
-
-            await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.IsArchived = false; x.Locked = false; });
-            await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = Helpers.GetThreadChannelByID(channel, id).Name.Replace("[GESCHLOSSEN] ", ""); });
-
-            var embedBuilder = new DiscordEmbedBuilder();
-            embedBuilder
-                .WithTitle(mess.Embeds[0].Title.Replace("[GESCHLOSSEN] ", ""))
-                .WithDescription(mess.Embeds[0].Description);
-            var emb = embedBuilder.Build();
-            await mess.ModifyAsync(mess.Content, embed: emb);
-        }
-
         [SlashCommand("welcomemessage", "Set Welcome Message")]
         [SlashCommandPermissions(Permissions.Administrator)]
         public async Task SetWelcomeMessage(InteractionContext ctx)
@@ -542,7 +435,7 @@ namespace EuDef
             }
             catch (BadRequestException exception)
             {
-                Program.LogDiscordError(exception, ctx.Guild);
+                ErrorHandler.HandleError(exception, ctx.Guild, ErrorHandler.ErrorType.Error);
             }
 
 
