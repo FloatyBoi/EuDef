@@ -101,10 +101,29 @@ namespace EuDef
 
             if (buttonType == "addDateTime")
             {
+                var timeAndDateString = message.Embeds[0].Fields[0].Value
+                .Substring(message.Embeds[0].Fields[0].Value.IndexOf(':') + 2, "12.01.2000,19:30".Length + 1) + "_" + message.Embeds[0].Fields[0].Value
+                .Substring(message.Embeds[0].Fields[0].Value.IndexOf("Ende:") + 6);
+
                 modal.WithTitle("Datum und Zeit");
                 modal.AddComponents(
-                    new TextInputComponent(label: "Datum und Zeit [12.01.2000,19:30]", placeholder: "12.01.2000,19:30", value: message.Embeds[0].Fields[0].Value, customId: "id-datetime", style: TextInputStyle.Short));
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                    new TextInputComponent(label: "Beginn [12.01.2000,19:30]",
+                    placeholder: "12.01.2000,19:30",
+                    value: timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1),
+                    customId: "id-datetimebegin", style: TextInputStyle.Short))
+                    .AddComponents(
+                    new TextInputComponent(label: "Ende [12.01.2000,21:30]",
+                    placeholder: "12.01.2000,21:30",
+                    value: timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1),
+                    customId: "id-datetimeend", style: TextInputStyle.Short));
+                try
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                }
+                catch (NullReferenceException ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
             }
 
             if (buttonType == "addNotifyMessage")
@@ -143,9 +162,12 @@ namespace EuDef
             var notifyRole = e.Guild.GetRole(Helpers.GetMemberRoleID(e.Guild.Id));
 
             //Getting Time and Date for event
-            string timeAndDateString = message.Embeds[0].Fields[0].Value;
-            var timeAndDate = DateTime.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
-            var timeAndDateOffset = DateTimeOffset.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+            //Format: "Anfang: " + timeAndDateBegin + "\nEnde: " + timeAndDateEnd;
+            var timeAndDateString = message.Embeds[0].Fields[0].Value
+                .Substring(message.Embeds[0].Fields[0].Value.IndexOf(':') + 2, "12.01.2000,19:30".Length + 1) + "_" + message.Embeds[0].Fields[0].Value
+                .Substring(message.Embeds[0].Fields[0].Value.IndexOf("Ende:") + 6);
+            var timeAndDateBegin = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+            var timeAndDateEnd = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
 
             var signUpButton = new DiscordButtonComponent(
                     ButtonStyle.Success,
@@ -178,8 +200,12 @@ namespace EuDef
                     statusButton
             };
 
+            DiscordEmbedBuilder finalizedEmbed = new DiscordEmbedBuilder(message.Embeds[0])
+                .RemoveFieldAt(2);
+            finalizedEmbed.Fields[0].Value = "Anfang: " + Formatter.Timestamp(timeAndDateBegin) + "\nEnde: " + Formatter.Timestamp(timeAndDateEnd);
+
             DiscordForumChannel forumChannel = (DiscordForumChannel)e.Guild.GetChannel(Helpers.GetEventForumID(e.Guild.Id));
-            DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"{message.Embeds[0].Title}").WithMessage(new DiscordMessageBuilder().WithContent(notifyRole.Mention).WithAllowedMentions(new IMention[] { new RoleMention(notifyRole) }).WithEmbed(embed: message.Embeds[0]).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
+            DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"{message.Embeds[0].Title}").WithMessage(new DiscordMessageBuilder().WithContent(notifyRole.Mention).WithAllowedMentions(new IMention[] { new RoleMention(notifyRole) }).WithEmbed(embed: finalizedEmbed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
 
             //Pin Message
             await forumPost.Message.PinAsync();
@@ -214,7 +240,7 @@ namespace EuDef
                 DiscordScheduledGuildEvent discordEvent = null;
                 try
                 {
-                    discordEvent = await e.Guild.CreateEventAsync(name: message.Embeds[0].Title, description: $"{forumPost.Message.JumpLink}", channelId: Helpers.GetMeetingPointID(e.Guild.Id), type: ScheduledGuildEventType.VoiceChannel, privacyLevel: ScheduledGuildEventPrivacyLevel.GuildOnly, start: timeAndDateOffset, end: timeAndDateOffset.AddHours(2));
+                    discordEvent = await e.Guild.CreateEventAsync(name: message.Embeds[0].Title, description: $"{forumPost.Message.JumpLink}", channelId: Helpers.GetMeetingPointID(e.Guild.Id), type: ScheduledGuildEventType.VoiceChannel, privacyLevel: ScheduledGuildEventPrivacyLevel.GuildOnly, start: new DateTimeOffset(timeAndDateBegin), end: new DateTimeOffset(timeAndDateEnd));
                 }
                 catch (BadRequestException ex)
                 {
@@ -232,16 +258,16 @@ namespace EuDef
             }
 
             //Create File with time
-            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//startTimeForCollection.txt", message.Embeds[0].Fields[0].Value);
+            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//startTimeForCollection.txt", timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1));
             //Create File for undecided reminder
             DateTime onedaybefore;
-            if (timeAndDate.AddDays(-1) > DateTime.Now)
+            if (timeAndDateBegin.AddDays(-1) > DateTime.Now)
             {
-                onedaybefore = timeAndDate.AddDays(-1);
+                onedaybefore = timeAndDateBegin.AddDays(-1);
             }
             else
             {
-                onedaybefore = timeAndDate;
+                onedaybefore = timeAndDateBegin;
             }
 
             File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//remindUndecided.txt", $"{onedaybefore.ToString("dd.MM.yyyy,HH:mm")}");

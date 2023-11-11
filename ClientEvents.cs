@@ -38,6 +38,7 @@ namespace EuDef
 
             var customID = e.Interaction.Data.CustomId;
 
+            //Gate for event creation modals VERY LIKELY ERROR POINT
             if (!customID.Contains('_'))
                 return;
 
@@ -72,16 +73,16 @@ namespace EuDef
                 try
                 {
                     //Checks whether or not its a valid format
-                    var timeAndDateString = e.Values["id-datetime"];
-                    var timeAndDate = DateTime.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
-                    var timeAndDateOffset = DateTimeOffset.ParseExact(timeAndDateString, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    var timeAndDateString = e.Values["id-datetimebegin"] + "_" + e.Values["id-datetimeend"];
+                    var timeAndDateBegin = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_')), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    var timeAndDateEnd = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
 
-                    if (timeAndDate < DateTime.Now)
+                    if (timeAndDateBegin < DateTime.Now || timeAndDateEnd <= timeAndDateBegin)
                     {
                         throw new Exception();
                     }
 
-                    embed.Fields[0].Value = timeAndDateString;
+                    embed.Fields[0].Value = "Anfang: " + timeAndDateString.Substring(0, timeAndDateString.IndexOf('_')) + "\nEnde: " + timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1);
 
                     await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
                     .AddEmbed(embed)
