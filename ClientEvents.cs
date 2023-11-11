@@ -124,12 +124,14 @@ namespace EuDef
 
             }
 
-            //Grant divider Roles
-            var dividerRoleIds = Helpers.GetDividerRoleIDs(e.Guild.Id);
+            //Doesnt quite work, not used for now
 
-            await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[0]));
-            await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[1]));
-            await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[2]));
+            ////Grant divider Roles
+            //var dividerRoleIds = Helpers.GetDividerRoleIDs(e.Guild.Id);
+
+            //await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[0]));
+            //await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[1]));
+            //await e.Member.GrantRoleAsync(e.Guild.GetRole(dividerRoleIds[2]));
         }
 
         private static async Task GuildMemberUpdated(GuildMemberUpdateEventArgs e)
