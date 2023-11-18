@@ -22,22 +22,36 @@ namespace EuDef
 
             if (buttonType == "status")
             {
-                await e.Interaction.DeferAsync(ephemeral: true);
+                try
+                {
+                    await e.Interaction.DeferAsync(ephemeral: true);
 
-                string[] signon = Helpers.GetNicknameByIdArray(File.ReadAllLines(signupPath), e.Guild);
-                string[] signoff = Helpers.GetNicknameByIdArray(File.ReadAllLines(signoffPath), e.Guild);
-                string[] undecided = Helpers.GetNicknameByIdArray(File.ReadAllLines(undecidedPath), e.Guild);
+                    string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signupPath), e.Guild);
+                    string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signoffPath), e.Guild);
+                    string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(undecidedPath), e.Guild);
 
 
 
-                var embed = new DiscordEmbedBuilder()
-                    .WithTitle("Status")
-                    .AddField($"Angemeldet: {File.ReadAllLines(signupPath).Length}", $"------------------------------------------\n{String.Join("\n", signon)}\n------------------------------------------\n")
-                    .AddField($"Abgemeldet: {File.ReadAllLines(signoffPath).Length}", $"------------------------------------------\n{String.Join("\n", signoff)}\n------------------------------------------\n")
-                    .AddField($"Unentschieden: {File.ReadAllLines(undecidedPath).Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
+                    var embed = new DiscordEmbedBuilder()
+                        .WithTitle("Status")
+                        .AddField($"Angemeldet: {File.ReadAllLines(signupPath).Length}", $"------------------------------------------\n{String.Join("\n", signon)}\n------------------------------------------\n")
+                        .AddField($"Abgemeldet: {File.ReadAllLines(signoffPath).Length}", $"------------------------------------------\n{String.Join("\n", signoff)}\n------------------------------------------\n")
+                        .AddField($"Unentschieden: {File.ReadAllLines(undecidedPath).Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
 
-                await e.Interaction.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed: embed));
-                return;
+                    await e.Interaction.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed: embed));
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    ErrorHandler.HandleError(ex, e.Guild, ErrorHandler.ErrorType.Error);
+
+                    var embed = new DiscordEmbedBuilder()
+                        .WithColor(DiscordColor.Red)
+                        .WithTitle("Fehlgeschlagen!")
+                        .WithDescription("Error: " + ex.Message);
+                    await e.Interaction.EditOriginalResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed: embed));
+
+                }
             }
             else if (File.Exists(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{Id}" + "//closed.txt"))
             {
@@ -169,6 +183,10 @@ namespace EuDef
             var timeAndDateBegin = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
             var timeAndDateEnd = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
 
+            //Really bad solution: Remove one hour to match timezone
+            timeAndDateBegin = timeAndDateBegin.AddHours(-1);
+            timeAndDateEnd = timeAndDateEnd.AddHours(-1);
+
             var signUpButton = new DiscordButtonComponent(
                     ButtonStyle.Success,
                     buttonId + "_signup",
@@ -202,7 +220,7 @@ namespace EuDef
 
             DiscordEmbedBuilder finalizedEmbed = new DiscordEmbedBuilder(message.Embeds[0])
                 .RemoveFieldAt(2);
-            finalizedEmbed.Fields[0].Value = "Anfang: " + Formatter.Timestamp(timeAndDateBegin) + "\nEnde: " + Formatter.Timestamp(timeAndDateEnd);
+            finalizedEmbed.Fields[0].Value = Formatter.Timestamp(timeAndDateBegin, TimestampFormat.LongDate) + " (" + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.RelativeTime) + ")" + "\nAnfang: " + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.ShortTime) + "\nEnde: " + Formatter.Timestamp(timeAndDateEnd, TimestampFormat.ShortTime);
 
             DiscordForumChannel forumChannel = (DiscordForumChannel)e.Guild.GetChannel(Helpers.GetEventForumID(e.Guild.Id));
             DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"{message.Embeds[0].Title}").WithMessage(new DiscordMessageBuilder().WithContent(notifyRole.Mention).WithAllowedMentions(new IMention[] { new RoleMention(notifyRole) }).WithEmbed(embed: finalizedEmbed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
@@ -271,6 +289,7 @@ namespace EuDef
             }
 
             File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//remindUndecided.txt", $"{onedaybefore.ToString("dd.MM.yyyy,HH:mm")}");
+
         }
 
 

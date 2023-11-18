@@ -23,7 +23,7 @@ namespace EuDef
         =====================================================================================================================================================================================
         */
 
-        public static string[] GetNicknameByIdArray(string[] iDs, DiscordGuild guild)
+        public static async Task<string[]> GetNicknameByIdArray(string[] iDs, DiscordGuild guild)
         {
             string[] nicknames = new string[iDs.Length];
 
@@ -31,9 +31,10 @@ namespace EuDef
             {
                 try
                 {
-                    nicknames[i] = guild.GetMemberAsync(Convert.ToUInt64(iDs[i])).Result.DisplayName;
+                    var member = await guild.GetMemberAsync(Convert.ToUInt64(iDs[i]));
+                    nicknames[i] = member.DisplayName;
                 }
-                catch (ServerErrorException e)
+                catch (DiscordException e)
                 {
                     Console.WriteLine(e.Message);
                     nicknames[i] = "?!NotFound!?";

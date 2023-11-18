@@ -63,9 +63,9 @@ namespace EuDef
 
                         Console.WriteLine("Guild ID: " + guildId + "\n");
 
-                        string[] signon = Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), client.GetGuildAsync(guildId).Result);
-                        string[] signoff = Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), client.GetGuildAsync(guildId).Result);
-                        string[] undecided = Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), client.GetGuildAsync(guildId).Result);
+                        string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), client.GetGuildAsync(guildId).Result);
+                        string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), client.GetGuildAsync(guildId).Result);
+                        string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), client.GetGuildAsync(guildId).Result);
 
 
                         try
