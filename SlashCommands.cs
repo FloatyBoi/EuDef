@@ -67,7 +67,8 @@ namespace EuDef
 
             [SlashCommand("create", "Start the event builder")]
             [SlashCommandPermissions(Permissions.Administrator)]
-            public async Task Create(InteractionContext ctx)
+            public async Task Create(InteractionContext ctx,
+                [Option("abstimmung", "Setzt ob über den Eventtag abgestimt werden soll")] EventFunctions.DoVote doVote)
             {
                 if (ctx.Channel.Id != Helpers.GetBotChannelID(ctx.Guild.Id))
                 {
@@ -113,7 +114,13 @@ namespace EuDef
                     .AddField("Beschreibung", "Platzhalter")
                     .AddField("Benachrichtigungstext", "Platzhalter");
 
-                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddComponents(addTitleButton, addDescriptionButton, addDateTimeButton, addNotifyMessageButton).AddComponents(addCreateEventButton, addCancelEventButton).AddEmbed(embed));
+                if (doVote == EventFunctions.DoVote.TagAbstimmen)
+                {
+                    embed.Fields[0].Value = "Über Abstimmung";
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddComponents(addTitleButton, addDescriptionButton, addNotifyMessageButton).AddComponents(addCreateEventButton, addCancelEventButton).AddEmbed(embed));
+                }
+                else
+                    await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddComponents(addTitleButton, addDescriptionButton, addDateTimeButton, addNotifyMessageButton).AddComponents(addCreateEventButton, addCancelEventButton).AddEmbed(embed));
 
                 //Caching
                 Directory.CreateDirectory(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache");
@@ -121,8 +128,11 @@ namespace EuDef
                 File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//channelId.txt", ctx.Channel.Id.ToString());
                 File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//messageId.txt", ctx.GetOriginalResponseAsync().Result.Id.ToString());
 
+                if (doVote == EventFunctions.DoVote.TagAbstimmen)
+                    File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//doVote.txt", ctx.InteractionId.ToString());
             }
 
+            //TODO: Fix edit (update it)
             [SlashCommand("edit", "Edit event")]
             [SlashCommandPermissions(Permissions.Administrator)]
             public async Task Modify(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
@@ -161,6 +171,7 @@ namespace EuDef
                 await response.Result.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Editing Event").AsEphemeral());
             }
 
+            //TODO: Remove?
             [SlashCommand("close", "Closes all interactions with this event")]
             [SlashCommandPermissions(Permissions.Administrator)]
             public async Task Close(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
@@ -218,6 +229,8 @@ namespace EuDef
                     await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = "[GESCHLOSSEN] " + Helpers.GetThreadChannelByID(channel, id).Name; x.IsArchived = true; x.Locked = true; });
                 }
             }
+
+            //TODO: Remove?
             [SlashCommand("reopen", "Reopens an Event")]
             [SlashCommandPermissions(Permissions.Administrator)]
             public async Task ReOpen(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)

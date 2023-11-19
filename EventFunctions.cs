@@ -9,11 +9,17 @@ using System.Threading.Tasks;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Exceptions;
 using System.Globalization;
+using Microsoft.VisualBasic;
 
 namespace EuDef
 {
     public static class EventFunctions
     {
+        public enum DoVote
+        {
+            TagAbstimmen,
+            FesterTag
+        }
         public static async void HandleEventRegistration(ComponentInteractionCreateEventArgs e, string buttonType, string Id)
         {
             string signupPath = Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{Id}" + $"//signup.txt";
@@ -90,10 +96,10 @@ namespace EuDef
             }
         }
 
-        public static async void HandleEventCreationUpdate(string buttonType, string buttonId, ComponentInteractionCreateEventArgs e)
+        public static async void HandleEventCreationUpdate(string buttonType, string buttonId, DiscordGuild guild, DiscordInteraction interaction)
         {
-            var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//EventCreationCache//{buttonId}//messageId.txt");
-            var message = e.Guild.GetChannel(Helpers.GetBotChannelID(e.Guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+            var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//messageId.txt");
+            var message = guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
 
             var modal = new DiscordInteractionResponseBuilder().WithContent("Eingeben").WithCustomId($"{buttonId}_eventCreateUpdate_{buttonType}");
 
@@ -102,7 +108,7 @@ namespace EuDef
                 modal.WithTitle("Titel");
                 modal.AddComponents(
                     new TextInputComponent(label: "Titel", customId: "id-title", value: message.Embeds[0].Title, style: TextInputStyle.Short));
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
             }
 
             if (buttonType == "addDescription")
@@ -110,7 +116,7 @@ namespace EuDef
                 modal.WithTitle("Beschreibung");
                 modal.AddComponents(
                     new TextInputComponent(label: "Beschreibung", customId: "id-description", value: message.Embeds[0].Fields[1].Value, style: TextInputStyle.Paragraph));
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
             }
 
             if (buttonType == "addDateTime")
@@ -132,7 +138,7 @@ namespace EuDef
                     customId: "id-datetimeend", style: TextInputStyle.Short));
                 try
                 {
-                    await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                    await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
                 }
                 catch (NullReferenceException ex)
                 {
@@ -145,35 +151,61 @@ namespace EuDef
                 modal.WithTitle("Benachrichtigung");
                 modal.AddComponents(
                     new TextInputComponent(label: "Benachrichtigung", customId: "id-notify", value: message.Embeds[0].Fields[2].Value, style: TextInputStyle.Paragraph));
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
+                await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
             }
 
             if (buttonType == "createEvent")
             {
                 try
                 {
-                    await FinalizeEventCreation(message, Convert.ToUInt64(buttonId), e);
-
-                    RemoveCachedEvent(buttonId, e);
-                    await message.DeleteAsync();
+                    if (File.Exists(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{buttonId}" + "//endTimeForVote.txt"))
+                    {
+                        await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event wurde bereits erstellt. Abstimmung am Laufen.").AsEphemeral());
+                        return;
+                    }
+                    await FinalizeEventCreation(message, Convert.ToUInt64(buttonId), guild, interaction); ;
                 }
                 catch (Exception ex)
                 {
-                    ErrorHandler.HandleError(ex, e.Guild, ErrorHandler.ErrorType.Warning);
-                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Etwas ist schiefgelaufen! Sind alle wichtigen Felder gefüllt?").AsEphemeral());
+                    ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
+                    await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Etwas ist schiefgelaufen! Sind alle wichtigen Felder gefüllt?").AsEphemeral());
                 }
             }
 
             if (buttonType == "cancelEvent")
             {
-                RemoveCachedEvent(buttonId, e);
+                if (File.Exists(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{buttonId}" + "//endTimeForVote.txt"))
+                {
+                    await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Event wurde bereits erstellt. Abstimmung am laufen.").AsEphemeral());
+                    return;
+                }
+                RemoveCachedEvent(buttonId, guild);
                 await message.DeleteAsync();
             }
         }
 
-        private static async Task FinalizeEventCreation(DiscordMessage message, ulong buttonId, ComponentInteractionCreateEventArgs e)
+        public static async Task FinalizeEventCreation(DiscordMessage message, ulong buttonId, DiscordGuild guild, DiscordInteraction? interaction)
         {
-            var notifyRole = e.Guild.GetRole(Helpers.GetMemberRoleID(e.Guild.Id));
+            bool doVote = File.Exists(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//doVote.txt");
+
+            var user = message.Interaction.User;
+
+            if (doVote)
+            {
+                var voteTimeModal = new DiscordInteractionResponseBuilder()
+                    .WithTitle("Optionen für Abstimmung")
+                    .WithCustomId($"{buttonId}_voteDateTime")
+                    .AddComponents(new TextInputComponent(label: "Erste Option [12.01.2000,19:30]",
+                    placeholder: "12.01.2000,19:30",
+                    customId: "id-datetimeoptionone", style: TextInputStyle.Short))
+                    .AddComponents(new TextInputComponent(label: "Zweite Option [12.01.2000,19:30]",
+                    placeholder: "12.01.2000,19:30",
+                    customId: "id-datetimeoptiontwo", style: TextInputStyle.Short));
+                await interaction.CreateResponseAsync(InteractionResponseType.Modal, voteTimeModal);
+                return;
+            }
+
+            var notifyRole = guild.GetRole(Helpers.GetMemberRoleID(guild.Id));
 
             //Getting Time and Date for event
             //Format: "Anfang: " + timeAndDateBegin + "\nEnde: " + timeAndDateEnd;
@@ -222,47 +254,50 @@ namespace EuDef
                 .RemoveFieldAt(2);
             finalizedEmbed.Fields[0].Value = Formatter.Timestamp(timeAndDateBegin, TimestampFormat.LongDate) + " (" + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.RelativeTime) + ")" + "\nAnfang: " + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.ShortTime) + "\nEnde: " + Formatter.Timestamp(timeAndDateEnd, TimestampFormat.ShortTime);
 
-            DiscordForumChannel forumChannel = (DiscordForumChannel)e.Guild.GetChannel(Helpers.GetEventForumID(e.Guild.Id));
+            DiscordForumChannel forumChannel = (DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guild.Id));
             DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"{message.Embeds[0].Title}").WithMessage(new DiscordMessageBuilder().WithContent(notifyRole.Mention).WithAllowedMentions(new IMention[] { new RoleMention(notifyRole) }).WithEmbed(embed: finalizedEmbed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
 
             //Pin Message
             await forumPost.Message.PinAsync();
 
-            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events");
-            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}");
-            StreamWriter writer = new StreamWriter((Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + "//forumPostID.txt"));
+            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events");
+            Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}");
+            StreamWriter writer = new StreamWriter((Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + "//forumPostID.txt"));
             writer.WriteLine(forumPost.Channel.Id);
             writer.Dispose();
 
-            string signupPath = Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//signup.txt";
-            string signoffPath = Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//signoff.txt";
-            string undecidedPath = Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//undecided.txt";
+            string signupPath = Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + $"//signup.txt";
+            string signoffPath = Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + $"//signoff.txt";
+            string undecidedPath = Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + $"//undecided.txt";
             FileStream file;
-            file = File.Create(signupPath);
-            file.Close();
+            if (!File.Exists(signupPath))
+            {
+                file = File.Create(signupPath);
+                file.Close();
+            }
             file = File.Create(signoffPath);
             file.Close();
             file = File.Create(undecidedPath);
             file.Dispose();
 
             var createEmbed = new DiscordEmbedBuilder()
-                .WithAuthor(e.User.Username, e.User.BannerUrl, e.User.AvatarUrl)
+                .WithAuthor(user.Username, user.BannerUrl, user.AvatarUrl)
                 .WithTitle("Event Created")
                 .WithDescription(message.Embeds[0].Title)
                 .AddField("Link", $"{forumPost.Message.JumpLink}")
                 .WithColor(DiscordColor.Aquamarine);
 
-            await e.Guild.GetChannel(Helpers.GetLogChannelID(e.Guild.Id)).SendMessageAsync(embed: createEmbed);
+            await guild.GetChannel(Helpers.GetLogChannelID(guild.Id)).SendMessageAsync(embed: createEmbed);
             try
             {
                 DiscordScheduledGuildEvent discordEvent = null;
                 try
                 {
-                    discordEvent = await e.Guild.CreateEventAsync(name: message.Embeds[0].Title, description: $"{forumPost.Message.JumpLink}", channelId: Helpers.GetMeetingPointID(e.Guild.Id), type: ScheduledGuildEventType.VoiceChannel, privacyLevel: ScheduledGuildEventPrivacyLevel.GuildOnly, start: new DateTimeOffset(timeAndDateBegin), end: new DateTimeOffset(timeAndDateEnd));
+                    discordEvent = await guild.CreateEventAsync(name: message.Embeds[0].Title, description: $"{forumPost.Message.JumpLink}", channelId: Helpers.GetMeetingPointID(guild.Id), type: ScheduledGuildEventType.VoiceChannel, privacyLevel: ScheduledGuildEventPrivacyLevel.GuildOnly, start: new DateTimeOffset(timeAndDateBegin), end: new DateTimeOffset(timeAndDateEnd));
                 }
                 catch (BadRequestException ex)
                 {
-                    ErrorHandler.HandleError(ex, e.Guild, ErrorHandler.ErrorType.Error);
+                    ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
                 }
 
                 var notifyMessage = message.Embeds[0].Fields[2].Value;
@@ -272,11 +307,11 @@ namespace EuDef
             }
             catch (Exception wellShit)
             {
-                ErrorHandler.HandleError(wellShit, e.Guild, ErrorHandler.ErrorType.Error);
+                ErrorHandler.HandleError(wellShit, guild, ErrorHandler.ErrorType.Error);
             }
 
             //Create File with time
-            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//startTimeForCollection.txt", timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1));
+            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + $"//startTimeForCollection.txt", timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1));
             //Create File for undecided reminder
             DateTime onedaybefore;
             if (timeAndDateBegin.AddDays(-1) > DateTime.Now)
@@ -288,18 +323,25 @@ namespace EuDef
                 onedaybefore = timeAndDateBegin;
             }
 
-            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{buttonId}" + $"//remindUndecided.txt", $"{onedaybefore.ToString("dd.MM.yyyy,HH:mm")}");
+            File.WriteAllText(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{buttonId}" + $"//remindUndecided.txt", $"{onedaybefore.ToString("dd.MM.yyyy,HH:mm")}");
 
+            //Cleanup
+            RemoveCachedEvent(buttonId.ToString(), guild);
+            await message.DeleteAsync();
         }
 
 
 
-        private static void RemoveCachedEvent(string buttonId, ComponentInteractionCreateEventArgs e)
+        private static void RemoveCachedEvent(string buttonId, DiscordGuild guild)
         {
             //Cleanup
-            File.Delete(Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//EventCreationCache//{buttonId}//channelId.txt");
-            File.Delete(Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//EventCreationCache//{buttonId}//messageId.txt");
-            Directory.Delete(Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//EventCreationCache//{buttonId}");
+            File.Delete(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//channelId.txt");
+            File.Delete(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//messageId.txt");
+
+            if (File.Exists(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//doVote.txt"))
+                File.Delete(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//doVote.txt");
+
+            Directory.Delete(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}");
         }
 
         private static bool HandleRegistration(ComponentInteractionCreateEventArgs e, string interactionId, string fileName)

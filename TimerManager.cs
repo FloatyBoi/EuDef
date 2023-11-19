@@ -8,6 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.IO;
+using Microsoft.VisualBasic;
+using DSharpPlus.EventArgs;
 
 namespace EuDef
 {
@@ -35,9 +38,9 @@ namespace EuDef
             string[] collectionFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "startTimeForCollection.txt", SearchOption.AllDirectories);
             string[] undecidedReminderFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "remindUndecided.txt", SearchOption.AllDirectories);
 
+            string[] voteEndFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "endTimeForVote.txt", SearchOption.AllDirectories);
 
-
-            //Found a file
+            //Found a file for collection
             if (collectionFilePaths.Length > 0)
             {
                 foreach (string path in collectionFilePaths)
@@ -162,8 +165,84 @@ namespace EuDef
                 }
             }
 
+            if (voteEndFilePaths.Length > 0)
+            {
+                foreach (string path in voteEndFilePaths)
+                {
+                    string parentDirectory = path.Replace("endTimeForVote.txt", "");
+                    parentDirectory = parentDirectory.Replace("\\", "/");
+                    string guildIdPath = parentDirectory.Remove(parentDirectory.IndexOf(@"/EventCreationCache"));
+                    ulong guildId = Convert.ToUInt64(guildIdPath.Substring(guildIdPath.LastIndexOf(@"/") + 1));
+
+                    DateTime dateTime = DateTime.ParseExact(File.ReadAllText(path), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    DateTime currentTime = DateTime.UtcNow;
 
 
+                    if (dateTime.Day <= DateTime.Today.Day && dateTime.Month == DateTime.Today.Month && dateTime.Year == DateTime.Today.Year)
+                    {
+
+                        Console.WriteLine("\nEnding Vote...");
+                        Console.WriteLine($"DateTime: {dateTime}\nCurrent Time: {currentTime}");
+
+                        Console.WriteLine(guildIdPath);
+
+                        Console.WriteLine("Guild ID: " + guildId + "\n");
+
+                        string[] optionOne = File.ReadAllLines(parentDirectory + "//optionOne.txt");
+                        string[] optionTwo = File.ReadAllLines(parentDirectory + "//optionTwo.txt");
+
+                        string dateTimeText;
+
+                        var guild = await client.GetGuildAsync(guildId);
+
+                        var doVoteContent = File.ReadAllText(parentDirectory + "//doVote.txt");
+
+                        Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{doVoteContent}");
+                        //First Option won, or same amount of votes
+                        if (optionOne.Length >= optionTwo.Length)
+                        {
+                            File.WriteAllLines(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{doVoteContent}" + "//signup.txt", optionOne);
+                            dateTimeText = File.ReadAllText(parentDirectory + "//optionOneTime.txt");
+                        }
+                        //Second Option won
+                        else
+                        {
+                            File.WriteAllLines(Directory.GetCurrentDirectory() + "//" + guild.Id + "//Events" + $"//{doVoteContent}" + "//signup.txt", optionTwo);
+                            dateTimeText = File.ReadAllText(parentDirectory + "//optionTwoTime.txt");
+                        }
+
+                        DiscordForumChannel forumChannel = (DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guild.Id));
+                        DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(forumChannel, File.ReadAllText(parentDirectory + "//forumPostId.txt"));
+                        await threadChannel.DeleteAsync();
+
+                        File.Delete(parentDirectory + "//doVote.txt");
+                        File.Delete(parentDirectory + "//endTimeForVote.txt");
+
+                        var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{doVoteContent}//messageId.txt");
+                        var message = guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+
+                        var dateTimeThreeHoursLater = DateTime.ParseExact(dateTimeText, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture).AddHours(3);
+
+                        message.Embeds[0].Fields[0].Value = "Anfang: " + dateTimeText +
+                            "\nEnde: " + dateTimeThreeHoursLater.ToString("dd.MM.yyyy,HH:mm");
+
+                        File.Delete(parentDirectory + "//optionOne.txt");
+                        File.Delete(parentDirectory + "//optionTwo.txt");
+                        File.Delete(parentDirectory + "//optionOneTime.txt");
+                        File.Delete(parentDirectory + "//optionTwoTime.txt");
+                        File.Delete(parentDirectory + "//forumPostId.txt");
+
+                        try
+                        {
+                            EventFunctions.HandleEventCreationUpdate("createEvent", doVoteContent, guild, null);
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
+                        }
+                    }
+                }
+            }
         }
     }
 }

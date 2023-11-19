@@ -45,6 +45,31 @@ namespace EuDef
             var interactionId = customID.Substring(0, customID.IndexOf('_'));
             var buttonType = customID.Substring(customID.LastIndexOf('_') + 1);
 
+            //Vote creation
+            if (buttonType == "voteDateTime")
+            {
+                try
+                {
+
+                    File.Create(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//optionOne.txt").Close();
+                    File.Create(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//optionTwo.txt").Close();
+
+                    var timeAndDateString = e.Values["id-datetimeoptionone"] + "_" + e.Values["id-datetimeoptiontwo"];
+                    var timeOptionOne = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_')), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    var timeOptionTwo = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    await VoteHandler.DoVote(timeOptionOne, timeOptionTwo, interactionId, e.Interaction);
+                }
+                catch (Exception ex)
+                {
+                    var errorEmbed = new DiscordEmbedBuilder()
+                        .WithColor(DiscordColor.Red)
+                        .WithDescription("Falsches Datum/Zeit-Format");
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(errorEmbed).AsEphemeral());
+                }
+            }
+
+            //Event creation
+
             var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//messageId.txt");
             var message = e.Interaction.Guild.GetChannel(Helpers.GetBotChannelID(e.Interaction.Guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
 
@@ -159,7 +184,10 @@ namespace EuDef
                 EventFunctions.HandleEventRegistration(e, buttonType, Id);
 
             if (buttonType == "addTitle" || buttonType == "addDescription" || buttonType == "addDateTime" || buttonType == "addNotifyMessage" || buttonType == "createEvent" || buttonType == "cancelEvent")
-                EventFunctions.HandleEventCreationUpdate(buttonType, Id, e);
+                EventFunctions.HandleEventCreationUpdate(buttonType, Id, e.Guild, e.Interaction);
+
+            if (buttonType == "optionOne" || buttonType == "optionTwo" || buttonType == "optionBoth" || buttonType == "voteStatus")
+                await VoteHandler.UpdateVote(buttonType, e.Guild, Id, e);
 
             //Role granting
             if (buttonType == "rolebutton")
