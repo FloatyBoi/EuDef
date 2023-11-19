@@ -55,12 +55,11 @@ namespace EuDef
 
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//forumPostId.txt", forumPost.Channel.Id.ToString());
 
-                //DEBUG: Should be AddDays(1)
-                var tomorrow = DateTime.Now.AddMinutes(1);
+                var tomorrow = DateTime.Now.AddDays(1);
 
 
                 //dd.MM.yyyy,HH:mm ,TODO: Last character randomly goes missing, fuck my life NOTE: ASYNC DONT DO SHIT
-                await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//endTimeForVote_.txt", tomorrow.ToString("dd.MM.yyyy,HH:mm"));
+                await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//endTimeForVote.txt", tomorrow.ToString("dd.MM.yyyy,HH:mm"));
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//optionOneTime.txt", timeOptionOne.ToString("dd.MM.yyyy,HH:mm"));
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//optionTwoTime.txt", timeOptionTwo.ToString("dd.MM.yyyy,HH:mm"));
 
