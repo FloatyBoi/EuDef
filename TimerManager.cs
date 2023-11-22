@@ -178,7 +178,7 @@ namespace EuDef
                     DateTime currentTime = DateTime.UtcNow;
 
 
-                    if (dateTime.Day <= DateTime.Today.Day && dateTime.Month == DateTime.Today.Month && dateTime.Year == DateTime.Today.Year)
+                    if (dateTime <= DateTime.Now)
                     {
 
                         Console.WriteLine("\nEnding Vote...");
