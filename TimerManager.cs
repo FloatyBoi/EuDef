@@ -56,7 +56,7 @@ namespace EuDef
                     DateTime currentTime = DateTime.UtcNow;
 
                     //Event data collection & sending to bot channel
-                    if (dateTime.Day <= DateTime.Today.Day && dateTime.Month == DateTime.Today.Month && dateTime.Year == DateTime.Today.Year)
+                    if (dateTime.AddHours(-2) <= currentTime.AddHours(-1))
                     {
 
                         Console.WriteLine("\nCollecting Data for event...");
@@ -69,7 +69,6 @@ namespace EuDef
                         string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), await client.GetGuildAsync(guildId));
                         string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), await client.GetGuildAsync(guildId));
                         string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), await client.GetGuildAsync(guildId));
-
 
                         try
                         {
