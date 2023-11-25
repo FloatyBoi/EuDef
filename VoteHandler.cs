@@ -11,7 +11,7 @@ namespace EuDef
 {
     public static class VoteHandler
     {
-        public static async Task DoVote(DateTime timeOptionOne, DateTime timeOptionTwo, string interactionId, DiscordInteraction interaction)
+        public static async Task DoVote(DateTime timeOptionOne, DateTime timeOptionTwo, DateTime endVoteTime, string interactionId, DiscordInteraction interaction)
         {
             await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Abstimmung gestartet"));
 
@@ -19,7 +19,7 @@ namespace EuDef
 
             var embed = new DiscordEmbedBuilder()
                 .WithTitle("Abstimmung")
-                .WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(DateTime.Now.AddDays(1).AddHours(-1), TimestampFormat.RelativeTime)}")
+                .WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(endVoteTime.AddHours(-1), TimestampFormat.RelativeTime)}")
                 .AddField("Erste Option", $"{Formatter.Timestamp(timeOptionOne.AddHours(-1), TimestampFormat.LongDateTime)}")
                 .AddField("Zweite Option", $"{Formatter.Timestamp(timeOptionTwo.AddHours(-1), TimestampFormat.LongDateTime)}");
 
@@ -55,11 +55,9 @@ namespace EuDef
 
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//forumPostId.txt", forumPost.Channel.Id.ToString());
 
-                var tomorrow = DateTime.Now.AddDays(1);
-
 
                 //dd.MM.yyyy,HH:mm ,TODO: Last character randomly goes missing, fuck my life NOTE: ASYNC DONT DO SHIT
-                await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//endTimeForVote.txt", tomorrow.ToString("dd.MM.yyyy,HH:mm"));
+                await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//endTimeForVote.txt", endVoteTime.ToString("dd.MM.yyyy,HH:mm"));
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//optionOneTime.txt", timeOptionOne.ToString("dd.MM.yyyy,HH:mm"));
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//optionTwoTime.txt", timeOptionTwo.ToString("dd.MM.yyyy,HH:mm"));
 

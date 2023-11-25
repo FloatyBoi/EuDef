@@ -109,9 +109,9 @@ namespace EuDef
 
                 var embed = new DiscordEmbedBuilder()
                     .WithTitle("Platzhalter")
-                    //Spaced are nececary... because wonky code
+                    .WithDescription("Platzhalter")
+                    //Spaces are nececary... because wonky code
                     .AddField("Datum", "Anfang: " + "Platzhalter       \nEnde: Platzhalter       ")
-                    .AddField("Beschreibung", "Platzhalter")
                     .AddField("Benachrichtigungstext", "Platzhalter");
 
                 if (doVote == EventFunctions.DoVote.TagAbstimmen)

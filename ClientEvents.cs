@@ -64,7 +64,8 @@ namespace EuDef
                     var timeAndDateString = e.Values["id-datetimeoptionone"] + "_" + e.Values["id-datetimeoptiontwo"];
                     var timeOptionOne = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_')), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
                     var timeOptionTwo = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
-                    await VoteHandler.DoVote(timeOptionOne, timeOptionTwo, interactionId, e.Interaction);
+                    var endVoteTime = DateTime.ParseExact(e.Values["id-datetimevoteend"], "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    await VoteHandler.DoVote(timeOptionOne, timeOptionTwo, endVoteTime, interactionId, e.Interaction);
                 }
                 catch (Exception ex)
                 {
@@ -78,7 +79,7 @@ namespace EuDef
             //Event creation
 
             var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//messageId.txt");
-            var message = e.Interaction.Guild.GetChannel(Helpers.GetBotChannelID(e.Interaction.Guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+            var message = await e.Interaction.Guild.GetChannel(Helpers.GetBotChannelID(e.Interaction.Guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId));
 
             var embed = new DiscordEmbedBuilder(message.Embeds[0]);
 
@@ -86,18 +87,32 @@ namespace EuDef
             {
                 embed.WithTitle(e.Values["id-title"]);
 
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
-                    .AddEmbed(embed)
-                    .AddComponents(message.Components));
+                try
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                        .AddEmbed(embed)
+                        .AddComponents(message.Components));
+                }
+                catch (Exception ex)
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Error: Too long"));
+                }
             }
 
             if (buttonType == "addDescription")
             {
-                embed.Fields[1].Value = (e.Values["id-description"]);
+                embed.Description = (e.Values["id-description"]);
 
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
-                    .AddEmbed(embed)
-                    .AddComponents(message.Components));
+                try
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                        .AddEmbed(embed)
+                        .AddComponents(message.Components));
+                }
+                catch (Exception ex)
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Error: Too long"));
+                }
             }
 
             if (buttonType == "addDateTime")
@@ -131,11 +146,18 @@ namespace EuDef
 
             if (buttonType == "addNotifyMessage")
             {
-                embed.Fields[2].Value = (e.Values["id-notify"]);
+                embed.Fields[1].Value = (e.Values["id-notify"]);
 
-                await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
-                    .AddEmbed(embed)
-                    .AddComponents(message.Components));
+                try
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder()
+                        .AddEmbed(embed)
+                        .AddComponents(message.Components));
+                }
+                catch (Exception ex)
+                {
+                    await e.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Error: Too long"));
+                }
             }
 
         }

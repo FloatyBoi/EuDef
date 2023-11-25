@@ -115,7 +115,7 @@ namespace EuDef
             {
                 modal.WithTitle("Beschreibung");
                 modal.AddComponents(
-                    new TextInputComponent(label: "Beschreibung", customId: "id-description", value: message.Embeds[0].Fields[1].Value, style: TextInputStyle.Paragraph));
+                    new TextInputComponent(label: "Beschreibung", customId: "id-description", value: message.Embeds[0].Description, style: TextInputStyle.Paragraph));
                 await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
             }
 
@@ -150,7 +150,7 @@ namespace EuDef
             {
                 modal.WithTitle("Benachrichtigung");
                 modal.AddComponents(
-                    new TextInputComponent(label: "Benachrichtigung", customId: "id-notify", value: message.Embeds[0].Fields[2].Value, style: TextInputStyle.Paragraph));
+                    new TextInputComponent(label: "Benachrichtigung", customId: "id-notify", value: message.Embeds[0].Fields[1].Value, style: TextInputStyle.Paragraph));
                 await interaction.CreateResponseAsync(InteractionResponseType.Modal, modal);
             }
 
@@ -200,7 +200,10 @@ namespace EuDef
                     customId: "id-datetimeoptionone", style: TextInputStyle.Short))
                     .AddComponents(new TextInputComponent(label: "Zweite Option [12.01.2000,19:30]",
                     placeholder: "12.01.2000,19:30",
-                    customId: "id-datetimeoptiontwo", style: TextInputStyle.Short));
+                    customId: "id-datetimeoptiontwo", style: TextInputStyle.Short))
+                    .AddComponents(new TextInputComponent(label: "Ende der Abstimmung [12.01.2000,19:30]",
+                    placeholder: "12.01.2000,19:30",
+                        customId: "id-datetimevoteend", style: TextInputStyle.Short));
                 await interaction.CreateResponseAsync(InteractionResponseType.Modal, voteTimeModal);
                 return;
             }
@@ -251,7 +254,7 @@ namespace EuDef
             };
 
             DiscordEmbedBuilder finalizedEmbed = new DiscordEmbedBuilder(message.Embeds[0])
-                .RemoveFieldAt(2);
+                .RemoveFieldAt(1);
             finalizedEmbed.Fields[0].Value = Formatter.Timestamp(timeAndDateBegin, TimestampFormat.LongDate) + " (" + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.RelativeTime) + ")" + "\nAnfang: " + Formatter.Timestamp(timeAndDateBegin, TimestampFormat.ShortTime) + "\nEnde: " + Formatter.Timestamp(timeAndDateEnd, TimestampFormat.ShortTime);
 
             DiscordForumChannel forumChannel = (DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guild.Id));
@@ -300,7 +303,7 @@ namespace EuDef
                     ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
                 }
 
-                var notifyMessage = message.Embeds[0].Fields[2].Value;
+                var notifyMessage = message.Embeds[0].Fields[1].Value;
 
                 Helpers.NotifyRoleFromEvent(message, notifyRole, notifyMessage, message.Embeds[0].Title, forumPost.Message, discordEvent);
 
