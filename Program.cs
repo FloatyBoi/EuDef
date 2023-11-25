@@ -50,7 +50,7 @@ namespace EuDef
 
             Console.WriteLine(Directory.GetCurrentDirectory());
 
-            ClientEvents.RegisterClientEvents(discordClient, slash);
+            await ClientEvents.RegisterClientEvents(discordClient, slash);
 
             discordClient.UseInteractivity(new DSharpPlus.Interactivity.InteractivityConfiguration()
             {

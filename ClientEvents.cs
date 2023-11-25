@@ -19,15 +19,22 @@ namespace EuDef
 {
     public static class ClientEvents
     {
-        public static void RegisterClientEvents(DiscordClient client, SlashCommandsExtension slash)
+        public static async Task RegisterClientEvents(DiscordClient client, SlashCommandsExtension slash)
         {
-            client.GuildMemberAdded += async (s, e) => await GuildMemberAdded(e);
-            client.GuildMemberUpdated += async (s, e) => await GuildMemberUpdated(e);
-            client.GuildMemberRemoved += async (s, e) => await GuildMemberRemoved(e);
-            client.ComponentInteractionCreated += async (s, e) => await ComponentInteractionCreated(e);
-            client.ClientErrored += async (s, e) => await ClientErrored(e);
-            client.ModalSubmitted += async (s, e) => await ModalSubmitted(e);
-            slash.SlashCommandErrored += async (s, e) => await SlashCommandErrored(e);
+            try
+            {
+                client.GuildMemberAdded += async (s, e) => await GuildMemberAdded(e);
+                client.GuildMemberUpdated += async (s, e) => await GuildMemberUpdated(e);
+                client.GuildMemberRemoved += async (s, e) => await GuildMemberRemoved(e);
+                client.ComponentInteractionCreated += async (s, e) => await ComponentInteractionCreated(e);
+                client.ClientErrored += async (s, e) => await ClientErrored(e);
+                client.ModalSubmitted += async (s, e) => await ModalSubmitted(e);
+                slash.SlashCommandErrored += async (s, e) => await SlashCommandErrored(e);
+            }
+            catch (Exception ex)
+            {
+                ErrorHandler.HandleError(ex, await client.GetGuildAsync(1154741242320658493), ErrorHandler.ErrorType.Error);
+            }
         }
 
         private static async Task ModalSubmitted(ModalSubmitEventArgs e)

@@ -99,7 +99,7 @@ namespace EuDef
         public static async void HandleEventCreationUpdate(string buttonType, string buttonId, DiscordGuild guild, DiscordInteraction interaction)
         {
             var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{buttonId}//messageId.txt");
-            var message = guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+            var message = await guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId));
 
             var modal = new DiscordInteractionResponseBuilder().WithContent("Eingeben").WithCustomId($"{buttonId}_eventCreateUpdate_{buttonType}");
 

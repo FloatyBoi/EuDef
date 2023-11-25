@@ -66,25 +66,27 @@ namespace EuDef
 
                         Console.WriteLine("Guild ID: " + guildId + "\n");
 
-                        string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), client.GetGuildAsync(guildId).Result);
-                        string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), client.GetGuildAsync(guildId).Result);
-                        string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), client.GetGuildAsync(guildId).Result);
+                        string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), await client.GetGuildAsync(guildId));
+                        string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), await client.GetGuildAsync(guildId));
+                        string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), await client.GetGuildAsync(guildId));
 
 
                         try
                         {
-                            DiscordThreadChannel channel = Helpers.GetThreadChannelByID((DiscordForumChannel)client.GetGuildAsync(guildId).Result.GetChannel(Helpers.GetEventForumID(guildId)), File.ReadAllText(parentDirectory + "forumPostID.txt"));
+                            var guild = await client.GetGuildAsync(guildId);
+                            DiscordThreadChannel channel = Helpers.GetThreadChannelByID((DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guildId)), File.ReadAllText(parentDirectory + "forumPostID.txt"));
+                            var pinnedMessaged = await channel.GetPinnedMessagesAsync();
 
                             var embed = new DiscordEmbedBuilder()
-                                .WithTitle($"Bisherige Anmeldungen für:\n {channel.GetPinnedMessagesAsync().Result.First().Embeds[0].Title}")
-                                .WithDescription($"{channel.GetPinnedMessagesAsync().Result.First().JumpLink}")
+                                .WithTitle($"Bisherige Anmeldungen für:\n {pinnedMessaged.First().Embeds[0].Title}")
+                                .WithDescription($"{pinnedMessaged.First().JumpLink}")
                                 .AddField($"Angemeldet: {File.ReadAllLines(parentDirectory + "//signup.txt").Length}", $"------------------------------------------\n{String.Join("\n", signon)}\n------------------------------------------\n")
                                 .AddField($"Abgemeldet: {File.ReadAllLines(parentDirectory + "//signoff.txt").Length}", $"------------------------------------------\n{String.Join("\n", signoff)}\n------------------------------------------\n")
                                 .AddField($"Unentschieden: {File.ReadAllLines(parentDirectory + "//undecided.txt").Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
 
-                            await client.GetGuildAsync(guildId).Result.GetChannel(Helpers.GetBotChannelID(guildId)).SendMessageAsync(embed);
+                            await guild.GetChannel(Helpers.GetBotChannelID(guildId)).SendMessageAsync(embed);
                         }
-                        catch (Exception ex) { ErrorHandler.HandleError(ex, client.GetGuildAsync(guildId).Result, ErrorHandler.ErrorType.Warning); }
+                        catch (Exception ex) { ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Warning); }
                         File.Delete(path);
 
 
@@ -110,10 +112,11 @@ namespace EuDef
 
                         if (dateTime.Day <= DateTime.Today.Day && dateTime.Month == DateTime.Today.Month && dateTime.Year == DateTime.Today.Year)
                         {
+                            var guild = await client.GetGuildAsync(guildId);
 
-                            DiscordThreadChannel channel = Helpers.GetThreadChannelByID((DiscordForumChannel)client.GetGuildAsync(guildId).Result.GetChannel(Helpers.GetEventForumID(guildId)), File.ReadAllText(parentDirectory + "forumPostID.txt"));
-                            var message = channel.GetPinnedMessagesAsync().Result.First();
-
+                            DiscordThreadChannel channel = Helpers.GetThreadChannelByID((DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guildId)), File.ReadAllText(parentDirectory + "forumPostID.txt"));
+                            var pinnedMessages = await channel.GetPinnedMessagesAsync();
+                            var message = pinnedMessages.First();
 
                             var embed = new DiscordEmbedBuilder()
                                 .WithTitle("Erinnerung: " + message.Embeds[0].Title)
@@ -121,12 +124,12 @@ namespace EuDef
 
                             string[] signupIds = File.ReadAllLines(Directory.GetParent(path) + "//signup.txt");
                             string[] signoffIds = File.ReadAllLines(Directory.GetParent(path) + "//signoff.txt");
-                            var members = client.GetGuildAsync(guildId).Result.Members;
+                            var members = guild.Members;
 
 
                             foreach (var member in members)
                             {
-                                if (member.Value.Roles.Contains(client.GetGuildAsync(guildId).Result.GetRole(memberId)))
+                                if (member.Value.Roles.Contains(guild.GetRole(memberId)))
                                 {
                                     if (!signupIds.Contains(member.Key.ToString()) && !signoffIds.Contains(member.Key.ToString()))
                                     {
@@ -145,7 +148,7 @@ namespace EuDef
                                                 .WithDescription(member.Value.Mention)
                                                 .AddField("Error message", badBoy.Message);
 
-                                            await client.GetGuildAsync(guildId).Result.GetChannel(Helpers.GetLogChannelID(guildId)).SendMessageAsync(embedBad);
+                                            await guild.GetChannel(Helpers.GetLogChannelID(guildId)).SendMessageAsync(embedBad);
                                         }
                                     }
                                 }
@@ -160,7 +163,7 @@ namespace EuDef
                     }
                     catch (Exception ex)
                     {
-                        ErrorHandler.HandleError(ex, client.GetGuildAsync(guildId).Result, ErrorHandler.ErrorType.Error);
+                        ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Error);
                     }
                 }
             }
@@ -219,12 +222,15 @@ namespace EuDef
                         File.Delete(parentDirectory + "//endTimeForVote.txt");
 
                         var messageId = File.ReadAllText(Directory.GetCurrentDirectory() + $"//{guild.Id}//EventCreationCache//{doVoteContent}//messageId.txt");
-                        var message = guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId)).Result;
+                        var message = await guild.GetChannel(Helpers.GetBotChannelID(guild.Id)).GetMessageAsync(Convert.ToUInt64(messageId));
 
                         var dateTimeThreeHoursLater = DateTime.ParseExact(dateTimeText, "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture).AddHours(3);
 
-                        message.Embeds[0].Fields[0].Value = "Anfang: " + dateTimeText +
+                        var embed = message.Embeds[0];
+                        embed.Fields[0].Value = "Anfang: " + dateTimeText +
                             "\nEnde: " + dateTimeThreeHoursLater.ToString("dd.MM.yyyy,HH:mm");
+
+                        await message.ModifyAsync(embed);
 
                         File.Delete(parentDirectory + "//optionOne.txt");
                         File.Delete(parentDirectory + "//optionTwo.txt");

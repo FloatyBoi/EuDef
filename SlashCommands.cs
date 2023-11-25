@@ -123,16 +123,17 @@ namespace EuDef
                     await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddComponents(addTitleButton, addDescriptionButton, addDateTimeButton, addNotifyMessageButton).AddComponents(addCreateEventButton, addCancelEventButton).AddEmbed(embed));
 
                 //Caching
+                var originalResponse = await ctx.GetOriginalResponseAsync();
+
                 Directory.CreateDirectory(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache");
                 Directory.CreateDirectory(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}");
                 File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//channelId.txt", ctx.Channel.Id.ToString());
-                File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//messageId.txt", ctx.GetOriginalResponseAsync().Result.Id.ToString());
+                File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//messageId.txt", originalResponse.Id.ToString());
 
                 if (doVote == EventFunctions.DoVote.TagAbstimmen)
                     File.WriteAllText(Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//EventCreationCache//{ctx.InteractionId}//doVote.txt", ctx.InteractionId.ToString());
             }
 
-            //TODO: Fix edit (update it)
             [SlashCommand("edit", "Edit event")]
             [SlashCommandPermissions(Permissions.Administrator)]
             public async Task Modify(InteractionContext ctx, [Option("thread_id", "Id of thread")] string id)
@@ -142,7 +143,8 @@ namespace EuDef
                 try
                 {
                     DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                    message = threadChannel.GetPinnedMessagesAsync().Result.First();
+                    var pinnedMessages = await threadChannel.GetPinnedMessagesAsync();
+                    message = pinnedMessages.First();
                 }
                 catch
                 {
@@ -181,7 +183,8 @@ namespace EuDef
                 try
                 {
                     DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                    eventMessage = threadChannel.GetPinnedMessagesAsync().Result.First();
+                    var pinnedMessages = await threadChannel.GetPinnedMessagesAsync();
+                    eventMessage = pinnedMessages.First();
                 }
                 catch
                 {
@@ -240,7 +243,8 @@ namespace EuDef
                 try
                 {
                     DiscordThreadChannel threadChannel = Helpers.GetThreadChannelByID(channel, id);
-                    message = threadChannel.GetPinnedMessagesAsync().Result.First();
+                    var pinnedMessages = await threadChannel.GetPinnedMessagesAsync();
+                    message = pinnedMessages.First();
                 }
                 catch
                 {
