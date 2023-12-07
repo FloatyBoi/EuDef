@@ -156,7 +156,7 @@ namespace EuDef
                     .WithTitle("Edit Event")
                     .WithCustomId($"id-event-edit-{ctx.InteractionId}")
                     .AddComponents(new TextInputComponent(label: "Name", customId: "id-name", value: message.Embeds[0].Title, style: TextInputStyle.Short))
-                    .AddComponents(new TextInputComponent(label: "Beschreibung", value: message.Embeds[0].Fields[1].Value, customId: "id-description", style: TextInputStyle.Paragraph));
+                    .AddComponents(new TextInputComponent(label: "Beschreibung", value: message.Embeds[0].Description, customId: "id-description", style: TextInputStyle.Paragraph));
 
                 await ctx.CreateResponseAsync(InteractionResponseType.Modal, modal);
                 var interactivity = ctx.Client.GetInteractivity();
@@ -164,7 +164,7 @@ namespace EuDef
                 var embedBuilder = new DiscordEmbedBuilder(message.Embeds[0]);
                 embedBuilder
                     .WithTitle(response.Result.Values["id-name"])
-                    .Fields[1].Value = response.Result.Values["id-description"];
+                    .Description = response.Result.Values["id-description"];
                 var embed = embedBuilder.Build();
                 await message.ModifyAsync(message.Content, embed: embed);
 

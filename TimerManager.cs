@@ -83,6 +83,7 @@ namespace EuDef
                                 .AddField($"Abgemeldet: {File.ReadAllLines(parentDirectory + "//signoff.txt").Length}", $"------------------------------------------\n{String.Join("\n", signoff)}\n------------------------------------------\n")
                                 .AddField($"Unentschieden: {File.ReadAllLines(parentDirectory + "//undecided.txt").Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
 
+
                             await guild.GetChannel(Helpers.GetBotChannelID(guildId)).SendMessageAsync(embed);
                         }
                         catch (Exception ex) { ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Warning); }
