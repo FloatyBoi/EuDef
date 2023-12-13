@@ -222,12 +222,23 @@ namespace EuDef
 
                     DiscordMessage message = eventMessage;
 
-                    var embedBuilder = new DiscordEmbedBuilder();
+                    var embedBuilder = new DiscordEmbedBuilder(message.Embeds[0]);
                     embedBuilder
-                        .WithTitle("[GESCHLOSSEN] " + message.Embeds[0].Title)
-                        .WithDescription(message.Embeds[0].Description);
+                        .WithTitle("[GESCHLOSSEN] " + message.Embeds[0].Title);
                     var embed = embedBuilder.Build();
-                    await message.ModifyAsync(message.Content, embed: embed);
+                    await message.ModifyAsync(new DiscordMessageBuilder().WithContent(message.Content).WithEmbed(embed).AddComponents(message.Components));
+
+                    string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signup.txt"), ctx.Guild);
+                    string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signoff.txt"), ctx.Guild);
+                    string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//undecided.txt"), ctx.Guild);
+
+                    var noticeEmbed = new DiscordEmbedBuilder()
+                                .WithTitle($"Anmeldungen bei Schließung:\n {eventMessage.Embeds[0].Title}")
+                                .WithDescription($"{eventMessage.JumpLink}")
+                                .AddField($"Angemeldet: {File.ReadAllLines(directory + "//signup.txt").Length}", $"------------------------------------------\n{String.Join("\n", signon)}\n------------------------------------------\n")
+                                .AddField($"Abgemeldet: {File.ReadAllLines(directory + "//signoff.txt").Length}", $"------------------------------------------\n{String.Join("\n", signoff)}\n------------------------------------------\n")
+                                .AddField($"Unentschieden: {File.ReadAllLines(directory + "//undecided.txt").Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
+                    await Helpers.GetThreadChannelByID(channel, id).SendMessageAsync(noticeEmbed);
 
                     await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => { x.Name = "[GESCHLOSSEN] " + Helpers.GetThreadChannelByID(channel, id).Name; x.IsArchived = true; x.Locked = true; });
                 }
@@ -280,10 +291,9 @@ namespace EuDef
 
                 var embedBuilder = new DiscordEmbedBuilder();
                 embedBuilder
-                    .WithTitle(mess.Embeds[0].Title.Replace("[GESCHLOSSEN] ", ""))
-                    .WithDescription(mess.Embeds[0].Description);
+                    .WithTitle(mess.Embeds[0].Title.Replace("[GESCHLOSSEN] ", ""));
                 var emb = embedBuilder.Build();
-                await mess.ModifyAsync(mess.Content, embed: emb);
+                await mess.ModifyAsync(new DiscordMessageBuilder().WithContent(message.Content).WithEmbed(emb).AddComponents(message.Components));
             }
         }
         [SlashCommand("welcomemessage", "Set Welcome Message")]
