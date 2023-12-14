@@ -462,6 +462,30 @@ namespace EuDef
                 }
 
             }
+
+            [SlashCommand("resetReactions", "Clears all checkmark reactions and removes role")]
+            public async Task ResetReactions(InteractionContext ctx)
+            {
+                if (ctx.Channel.IsThread)
+                {
+                    string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
+
+                    DiscordMessage originalMessage = await ctx.Channel.GetMessageAsync(ctx.Channel.Id);
+
+                    DiscordMember[] reactedMembers = (DiscordMember[])await originalMessage.GetReactionsAsync(DiscordEmoji.FromUnicode("✅"));
+
+                    var role = ctx.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{ctx.Channel.Id}.txt")));
+
+                    foreach (var member in reactedMembers)
+                        await member.RevokeRoleAsync(role);
+
+                    File.Delete(reactionPath + $"//{ctx.Channel.Id}");
+                }
+                else
+                {
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
+                }
+            }
         }
 
 
