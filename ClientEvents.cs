@@ -29,11 +29,51 @@ namespace EuDef
                 client.ComponentInteractionCreated += async (s, e) => await ComponentInteractionCreated(e);
                 client.ClientErrored += async (s, e) => await ClientErrored(e);
                 client.ModalSubmitted += async (s, e) => await ModalSubmitted(e);
+                client.MessageReactionAdded += async (s, e) => await MessageReactionAdded(e);
+                client.MessageReactionRemoved += async (s, e) => await MessageReactionRemoved(e);
                 slash.SlashCommandErrored += async (s, e) => await SlashCommandErrored(e);
             }
             catch (Exception ex)
             {
                 ErrorHandler.HandleError(ex, await client.GetGuildAsync(1154741242320658493), ErrorHandler.ErrorType.Error);
+            }
+        }
+
+        private static async Task MessageReactionAdded(MessageReactionAddEventArgs e)
+        {
+            string reactionPath = Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//ReactionManagement";
+
+            if (e.Emoji.Name == "✅")
+            {
+                if (File.Exists(reactionPath + $"//{e.Message.Id}.txt"))
+                {
+                    var role = e.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{e.Message.Id}.txt")));
+                    await ((DiscordMember)e.User).GrantRoleAsync(role, "Granted game role");
+
+                    var embed = new DiscordEmbedBuilder().WithDescription("Rolle hinzugefügt: " + role.Name).WithTitle("Nachricht");
+
+                    await ((DiscordMember)e.User).SendMessageAsync(embed);
+                }
+
+            }
+        }
+
+        private static async Task MessageReactionRemoved(MessageReactionRemoveEventArgs e)
+        {
+            string reactionPath = Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//ReactionManagement";
+            Directory.CreateDirectory(reactionPath);
+            if (e.Emoji.Name == "✅")
+            {
+                if (File.Exists(reactionPath + $"//{e.Message.Id}.txt"))
+                {
+                    var role = e.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{e.Message.Id}.txt")));
+                    await ((DiscordMember)e.User).RevokeRoleAsync(role, "Removed game role");
+
+                    var embed = new DiscordEmbedBuilder().WithDescription("Rolle entfernt: " + role.Name).WithTitle("Nachricht");
+
+                    await ((DiscordMember)e.User).SendMessageAsync(embed);
+                }
+
             }
         }
 

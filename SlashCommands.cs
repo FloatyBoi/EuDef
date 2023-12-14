@@ -419,16 +419,62 @@ namespace EuDef
             }
         }
 
+        [SlashCommandGroup("reactions", "Manage reactions to... reactions")]
+        [SlashCommandPermissions(Permissions.Administrator)]
+        public class Reactions
+        {
+
+            [SlashCommand("addRoleToThread", "Which role to grant for a reaction here, removes existing one")]
+            public async Task AddRoleToThread(InteractionContext ctx, [Option("role", "Role to add, removes existing role")] DiscordRole role)
+            {
+                if (ctx.Channel.IsThread)
+                {
+
+                    string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
+                    Directory.CreateDirectory(reactionPath);
+                    var pinnedMessages = await ctx.Channel.GetPinnedMessagesAsync();
+
+                    File.WriteAllText(reactionPath + $"//{pinnedMessages.First().Id}.txt", role.Id.ToString());
+
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Rolle {role.Mention} zu {ctx.Channel.Mention} hinzugefügt ").AsEphemeral());
+                }
+                {
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
+                }
+
+            }
+
+            [SlashCommand("removeRoleFromThread", "Remove a role from the thread")]
+            public async Task RemoveRoleFromThread(InteractionContext ctx, [Option("role", "Role to remove")] DiscordRole role)
+            {
+                if (ctx.Channel.IsThread)
+                {
+                    string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
+                    Directory.CreateDirectory(reactionPath);
+                    var pinnedMessages = await ctx.Channel.GetPinnedMessagesAsync();
+
+                    File.Delete(reactionPath + $"//{pinnedMessages.First().Id}.txt");
+
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Rolle {role.Mention} von {ctx.Channel.Mention} entfernt ").AsEphemeral());
+                }
+                {
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
+                }
+
+            }
+        }
+
+
         [SlashCommand("rolemessage", "Create a role message")]
         [SlashCommandPermissions(Permissions.Administrator)]
         public async Task WelcomeButtonPrompt(InteractionContext ctx,
-                                      [Option("message", "message")] string message,
-                                      [Option("button1text", "text for this button")] string button1text,
-                                      [Option("button1role", "role for this button")] DiscordRole button1role,
-                                      [Option("button2text", "text for this button")] string button2text,
-                                      [Option("button2role", "role for this button")] DiscordRole button2role,
-                                      [Option("button3text", "text for this button")] string button3text,
-                                      [Option("button3role", "role for this button")] DiscordRole button3role)
+                                  [Option("message", "message")] string message,
+                                  [Option("button1text", "text for this button")] string button1text,
+                                  [Option("button1role", "role for this button")] DiscordRole button1role,
+                                  [Option("button2text", "text for this button")] string button2text,
+                                  [Option("button2role", "role for this button")] DiscordRole button2role,
+                                  [Option("button3text", "text for this button")] string button3text,
+                                  [Option("button3role", "role for this button")] DiscordRole button3role)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Creating Message").AsEphemeral());
             var embed = new DiscordEmbedBuilder().WithDescription(message);
