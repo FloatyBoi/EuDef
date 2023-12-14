@@ -463,31 +463,36 @@ namespace EuDef
 
             }
 
-            [SlashCommand("resetReactions", "Clears all reactions and removes role")]
+            [SlashCommand("resetReactions", "Clears all reactions")]
             public async Task ResetReactions(InteractionContext ctx)
             {
-                if (ctx.Channel.IsThread)
+                try
                 {
-                    string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
+                    if (ctx.Channel.IsThread)
+                    {
+                        string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
 
-                    DiscordMessage originalMessage = await ctx.Channel.GetMessageAsync(ctx.Channel.Id);
+                        DiscordMessage originalMessage = await ctx.Channel.GetMessageAsync(ctx.Channel.Id);
 
-                    var reactedMembers = await originalMessage.GetReactionsAsync(DiscordEmoji.FromUnicode("✅"));
+                        var reactedMembers = await originalMessage.GetReactionsAsync(DiscordEmoji.FromUnicode("✅"));
 
-                    var role = ctx.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{ctx.Channel.Id}.txt")));
+                        var role = ctx.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{ctx.Channel.Id}.txt")));
 
-                    foreach (var user in reactedMembers)
-                        await (await ctx.Guild.GetMemberAsync(user.Id)).RevokeRoleAsync(role);
+                        foreach (var user in reactedMembers)
+                            await (await ctx.Guild.GetMemberAsync(user.Id)).RevokeRoleAsync(role);
 
-                    File.Delete(reactionPath + $"//{ctx.Channel.Id}.txt");
+                        await originalMessage.DeleteAllReactionsAsync();
 
-                    await originalMessage.DeleteAllReactionsAsync();
-
-                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Zugewiesene Rollen sowie Reaktionen zurückgesetzt").AsEphemeral());
+                        await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Zugewiesene Rollen sowie Reaktionen zurückgesetzt").AsEphemeral());
+                    }
+                    else
+                    {
+                        await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Rolle noch nicht gesetzt").AsEphemeral());
                 }
             }
         }
