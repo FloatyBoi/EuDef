@@ -472,14 +472,18 @@ namespace EuDef
 
                     DiscordMessage originalMessage = await ctx.Channel.GetMessageAsync(ctx.Channel.Id);
 
-                    DiscordMember[] reactedMembers = (DiscordMember[])await originalMessage.GetReactionsAsync(DiscordEmoji.FromUnicode("✅"));
+                    var reactedMembers = await originalMessage.GetReactionsAsync(DiscordEmoji.FromUnicode("✅"));
 
                     var role = ctx.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{ctx.Channel.Id}.txt")));
 
                     foreach (var member in reactedMembers)
-                        await member.RevokeRoleAsync(role);
+                        await ((DiscordMember)member).RevokeRoleAsync(role);
 
                     File.Delete(reactionPath + $"//{ctx.Channel.Id}");
+
+                    await originalMessage.DeleteReactionsEmojiAsync(DiscordEmoji.FromUnicode("✅"));
+
+                    await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Zugewiesene Rollen sowie Reaktionen zurückgesetzt").AsEphemeral());
                 }
                 else
                 {
