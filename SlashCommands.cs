@@ -463,7 +463,7 @@ namespace EuDef
 
             }
 
-            [SlashCommand("resetReactions", "Clears all checkmark reactions and removes role")]
+            [SlashCommand("resetReactions", "Clears all reactions and removes role")]
             public async Task ResetReactions(InteractionContext ctx)
             {
                 if (ctx.Channel.IsThread)
@@ -481,7 +481,7 @@ namespace EuDef
 
                     File.Delete(reactionPath + $"//{ctx.Channel.Id}.txt");
 
-                    await originalMessage.DeleteReactionsEmojiAsync(DiscordEmoji.FromUnicode("✅"));
+                    await originalMessage.DeleteAllReactionsAsync();
 
                     await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Zugewiesene Rollen sowie Reaktionen zurückgesetzt").AsEphemeral());
                 }
