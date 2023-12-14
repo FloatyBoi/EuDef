@@ -432,12 +432,12 @@ namespace EuDef
 
                     string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
                     Directory.CreateDirectory(reactionPath);
-                    var pinnedMessages = await ctx.Channel.GetPinnedMessagesAsync();
 
-                    File.WriteAllText(reactionPath + $"//{pinnedMessages.First().Id}.txt", role.Id.ToString());
+                    File.WriteAllText(reactionPath + $"//{ctx.Channel.Id}.txt", role.Id.ToString());
 
                     await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Rolle {role.Mention} zu {ctx.Channel.Mention} hinzugefügt ").AsEphemeral());
                 }
+                else
                 {
                     await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
                 }
@@ -451,12 +451,12 @@ namespace EuDef
                 {
                     string reactionPath = Directory.GetCurrentDirectory() + $"//{ctx.Guild.Id}//ReactionManagement";
                     Directory.CreateDirectory(reactionPath);
-                    var pinnedMessages = await ctx.Channel.GetPinnedMessagesAsync();
 
-                    File.Delete(reactionPath + $"//{pinnedMessages.First().Id}.txt");
+                    File.Delete(reactionPath + $"//{ctx.Channel.Id}.txt");
 
                     await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Rolle {role.Mention} von {ctx.Channel.Mention} entfernt ").AsEphemeral());
                 }
+                else
                 {
                     await ctx.CreateResponseAsync(new DiscordInteractionResponseBuilder().WithContent($"Please execute in a thread channel...").AsEphemeral());
                 }

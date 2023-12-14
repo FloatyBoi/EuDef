@@ -45,7 +45,7 @@ namespace EuDef
 
             if (e.Emoji.Name == "✅")
             {
-                if (File.Exists(reactionPath + $"//{e.Message.Id}.txt"))
+                if (File.Exists(reactionPath + $"//{e.Message.Channel.Id}.txt"))
                 {
                     var role = e.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{e.Message.Id}.txt")));
                     await ((DiscordMember)e.User).GrantRoleAsync(role, "Granted game role");
