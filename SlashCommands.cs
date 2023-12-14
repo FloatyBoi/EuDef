@@ -479,7 +479,7 @@ namespace EuDef
                     foreach (var user in reactedMembers)
                         await (await ctx.Guild.GetMemberAsync(user.Id)).RevokeRoleAsync(role);
 
-                    File.Delete(reactionPath + $"//{ctx.Channel.Id}");
+                    File.Delete(reactionPath + $"//{ctx.Channel.Id}.txt");
 
                     await originalMessage.DeleteReactionsEmojiAsync(DiscordEmoji.FromUnicode("✅"));
 
