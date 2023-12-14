@@ -476,8 +476,8 @@ namespace EuDef
 
                     var role = ctx.Guild.GetRole(Convert.ToUInt64(File.ReadAllText(reactionPath + $"//{ctx.Channel.Id}.txt")));
 
-                    foreach (var member in reactedMembers)
-                        await ((DiscordMember)member).RevokeRoleAsync(role);
+                    foreach (var user in reactedMembers)
+                        await (await ctx.Guild.GetMemberAsync(user.Id)).RevokeRoleAsync(role);
 
                     File.Delete(reactionPath + $"//{ctx.Channel.Id}");
 
