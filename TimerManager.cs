@@ -56,7 +56,7 @@ namespace EuDef
                     DateTime currentTime = DateTime.UtcNow;
 
                     //Event data collection & sending to bot channel
-                    if (dateTime.AddHours(-2) <= currentTime.AddHours(-1))
+                    if (dateTime.AddHours(-2) <= currentTime)
                     {
 
                         Console.WriteLine("\nCollecting Data for event...");

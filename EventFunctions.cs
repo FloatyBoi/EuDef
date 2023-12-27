@@ -218,9 +218,6 @@ namespace EuDef
             var timeAndDateBegin = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_') - 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
             var timeAndDateEnd = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
 
-            //Really bad solution: Remove one hour to match timezone
-            timeAndDateBegin = timeAndDateBegin.AddHours(-1);
-            timeAndDateEnd = timeAndDateEnd.AddHours(-1);
 
             var signUpButton = new DiscordButtonComponent(
                     ButtonStyle.Success,

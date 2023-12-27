@@ -19,9 +19,9 @@ namespace EuDef
 
             var embed = new DiscordEmbedBuilder()
                 .WithTitle("Abstimmung")
-                .WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(endVoteTime.AddHours(-1), TimestampFormat.RelativeTime)}")
-                .AddField("Erste Option", $"{Formatter.Timestamp(timeOptionOne.AddHours(-1), TimestampFormat.LongDateTime)}")
-                .AddField("Zweite Option", $"{Formatter.Timestamp(timeOptionTwo.AddHours(-1), TimestampFormat.LongDateTime)}");
+                .WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(endVoteTime, TimestampFormat.RelativeTime)}")
+                .AddField("Erste Option", $"{Formatter.Timestamp(timeOptionOne, TimestampFormat.LongDateTime)}")
+                .AddField("Zweite Option", $"{Formatter.Timestamp(timeOptionTwo, TimestampFormat.LongDateTime)}");
 
             var optionOne = new DiscordButtonComponent(
                 ButtonStyle.Primary,
