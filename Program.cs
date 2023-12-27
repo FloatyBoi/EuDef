@@ -34,6 +34,20 @@ namespace EuDef
             if (debug)
                 config.MinimumLogLevel = LogLevel.Debug;
 
+            foreach (var arg in args)
+            {
+                switch (arg.ToLower())
+                {
+                    case "-nw":
+                        config.MinimumLogLevel = LogLevel.None;
+                        break;
+                    default:
+                        Console.WriteLine("Unknown arg: " + arg);
+                        return;
+
+                }
+            }
+
             //Setup
             var discordClient = new DiscordClient(config);
             var slash = discordClient.UseSlashCommands();
