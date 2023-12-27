@@ -59,12 +59,12 @@ namespace EuDef
                     if (dateTime.AddHours(-2) <= currentTime)
                     {
 
-                        Console.WriteLine("\nCollecting Data for event...");
-                        Console.WriteLine($"DateTime: {dateTime}\nCurrent Time: {currentTime}");
+                        //Console.WriteLine("\nCollecting Data for event...");
+                        //Console.WriteLine($"DateTime: {dateTime}\nCurrent Time: {currentTime}");
 
-                        Console.WriteLine(guildIdPath);
+                        //Console.WriteLine(guildIdPath);
 
-                        Console.WriteLine("Guild ID: " + guildId + "\n");
+                        //Console.WriteLine("Guild ID: " + guildId + "\n");
 
                         string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), await client.GetGuildAsync(guildId));
                         string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), await client.GetGuildAsync(guildId));
@@ -140,7 +140,7 @@ namespace EuDef
                                         }
                                         catch (UnauthorizedException badBoy)
                                         {
-                                            Console.WriteLine(member.Value.DisplayName + " has Direct Messages turned off :(");
+                                            //Console.WriteLine(member.Value.DisplayName + " has Direct Messages turned off :(");
 
                                             var embedBad = new DiscordEmbedBuilder()
                                                 .WithColor(DiscordColor.Gray)

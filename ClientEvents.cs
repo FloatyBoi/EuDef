@@ -246,7 +246,7 @@ namespace EuDef
             var buttonType = e.Id.Substring(e.Id.LastIndexOf('_') + 1);
             var Id = e.Id.Substring(0, e.Id.IndexOf('_'));
 
-            Console.WriteLine("Component Interaction received : " + buttonType + " : " + Id);
+            //Console.WriteLine("Component Interaction received : " + buttonType + " : " + Id);
 
             //Event related
             if (buttonType == "status" || buttonType == "signup" || buttonType == "signoff" || buttonType == "undecided")

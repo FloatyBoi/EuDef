@@ -142,7 +142,7 @@ namespace EuDef
                 }
                 catch (NullReferenceException ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    //Console.WriteLine(ex.ToString());
                 }
             }
 
