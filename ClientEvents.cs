@@ -102,10 +102,12 @@ namespace EuDef
                     File.Create(Directory.GetCurrentDirectory() + $"//{e.Interaction.Guild.Id}//EventCreationCache//{interactionId}//optionTwo.txt").Close();
 
                     var timeAndDateString = e.Values["id-datetimeoptionone"] + "_" + e.Values["id-datetimeoptiontwo"];
+                    var timeOptionOneName = e.Values["id-datetimeoptiononename"];
                     var timeOptionOne = DateTime.ParseExact(timeAndDateString.Substring(0, timeAndDateString.IndexOf('_')), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+                    var timeOptionTwoName = e.Values["id-datetimeoptiontwoname"];
                     var timeOptionTwo = DateTime.ParseExact(timeAndDateString.Substring(timeAndDateString.IndexOf('_') + 1), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
                     var endVoteTime = DateTime.ParseExact(e.Values["id-datetimevoteend"], "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
-                    await VoteHandler.DoVote(timeOptionOne, timeOptionTwo, endVoteTime, interactionId, e.Interaction);
+                    await VoteHandler.DoVote(timeOptionOneName, timeOptionOne, timeOptionTwoName, timeOptionTwo, endVoteTime, interactionId, e.Interaction);
                 }
                 catch (Exception ex)
                 {

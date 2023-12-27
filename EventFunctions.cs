@@ -195,9 +195,15 @@ namespace EuDef
                 var voteTimeModal = new DiscordInteractionResponseBuilder()
                     .WithTitle("Optionen für Abstimmung")
                     .WithCustomId($"{buttonId}_voteDateTime")
+                    .AddComponents(new TextInputComponent(label: "Erster Name",
+                    placeholder: "Erste Option", value: "Erste Option",
+                    customId: "id-datetimeoptiononename", style: TextInputStyle.Short))
                     .AddComponents(new TextInputComponent(label: "Erste Option [12.01.2000,19:30]",
                     placeholder: "12.01.2000,19:30",
                     customId: "id-datetimeoptionone", style: TextInputStyle.Short))
+                    .AddComponents(new TextInputComponent(label: "Zweiter Name",
+                    placeholder: "Zweite Option", value: "Zweite Option",
+                    customId: "id-datetimeoptiontwoname", style: TextInputStyle.Short))
                     .AddComponents(new TextInputComponent(label: "Zweite Option [12.01.2000,19:30]",
                     placeholder: "12.01.2000,19:30",
                     customId: "id-datetimeoptiontwo", style: TextInputStyle.Short))

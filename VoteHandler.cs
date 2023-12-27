@@ -11,7 +11,7 @@ namespace EuDef
 {
     public static class VoteHandler
     {
-        public static async Task DoVote(DateTime timeOptionOne, DateTime timeOptionTwo, DateTime endVoteTime, string interactionId, DiscordInteraction interaction)
+        public static async Task DoVote(string timeOptionOneName, DateTime timeOptionOne, string timeOptionTwoName, DateTime timeOptionTwo, DateTime endVoteTime, string interactionId, DiscordInteraction interaction)
         {
             await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Abstimmung gestartet"));
 
@@ -20,8 +20,8 @@ namespace EuDef
             var embed = new DiscordEmbedBuilder()
                 .WithTitle("Abstimmung")
                 .WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(endVoteTime, TimestampFormat.RelativeTime)}")
-                .AddField("Erste Option", $"{Formatter.Timestamp(timeOptionOne, TimestampFormat.LongDateTime)}")
-                .AddField("Zweite Option", $"{Formatter.Timestamp(timeOptionTwo, TimestampFormat.LongDateTime)}");
+                .AddField(timeOptionOneName, $"{Formatter.Timestamp(timeOptionOne, TimestampFormat.LongDateTime)}")
+                .AddField(timeOptionTwoName, $"{Formatter.Timestamp(timeOptionTwo, TimestampFormat.LongDateTime)}");
 
             var optionOne = new DiscordButtonComponent(
                 ButtonStyle.Primary,

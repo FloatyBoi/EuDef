@@ -184,12 +184,12 @@ namespace EuDef
                     if (dateTime <= DateTime.Now)
                     {
 
-                        Console.WriteLine("\nEnding Vote...");
-                        Console.WriteLine($"DateTime: {dateTime}\nCurrent Time: {currentTime}");
+                        //Console.WriteLine("\nEnding Vote...");
+                        //Console.WriteLine($"DateTime: {dateTime}\nCurrent Time: {currentTime}");
 
-                        Console.WriteLine(guildIdPath);
+                        //Console.WriteLine(guildIdPath);
 
-                        Console.WriteLine("Guild ID: " + guildId + "\n");
+                        //Console.WriteLine("Guild ID: " + guildId + "\n");
 
                         string[] optionOne = File.ReadAllLines(parentDirectory + "//optionOne.txt");
                         string[] optionTwo = File.ReadAllLines(parentDirectory + "//optionTwo.txt");
