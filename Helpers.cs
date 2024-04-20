@@ -5,6 +5,8 @@ using DSharpPlus.Exceptions;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace EuDef
 {
@@ -127,6 +130,47 @@ namespace EuDef
         =====================================================================================================================================================================================
         */
 
+        public static Dictionary<string, int> LoadDictionary(string filePath)
+        {
+            string json = File.ReadAllText(filePath);
+            return JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
+        }
+
+        public static bool SaveDictionary(string filePath, Dictionary<string, int> dict)
+        {
+            try
+            {
+                string json = JsonConvert.SerializeObject(dict, Formatting.Indented);
+                File.WriteAllText(filePath, json);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static Dictionary<string, int> SortDictionaryByValue(Dictionary<string, int> dictionary, SlashCommands.SortEnum sortType)
+        {
+            // Convert dictionary to list of key-value pairs
+            List<KeyValuePair<string, int>> list = dictionary.ToList();
+
+            // Sort the list based on values
+            if (sortType == SlashCommands.SortEnum.most)
+                list.Sort((x, y) => y.Value.CompareTo(x.Value));
+            else
+                list.Sort((x, y) => x.Value.CompareTo(y.Value));
+
+            // Convert sorted list back to dictionary
+            Dictionary<string, int> sortedDictionary = new Dictionary<string, int>();
+            foreach (var kvp in list)
+            {
+                sortedDictionary.Add(kvp.Key, kvp.Value);
+            }
+
+            return sortedDictionary;
+        }
         public static async void NotifyRole(InteractionContext ctx, DiscordRole role, string message, string? eventName, DiscordMessage? Message, bool editMessage, DiscordScheduledGuildEvent? discordEvent)
         {
             try
@@ -160,7 +204,7 @@ namespace EuDef
                             }
                             catch (UnauthorizedException badBoy)
                             {
-                                Console.WriteLine(member.DisplayName + " has Direct Messages turned off :(");
+                                //Console.WriteLine(member.DisplayName + " has Direct Messages turned off :(");
 
                                 var embedBad = new DiscordEmbedBuilder()
                                     .WithColor(DiscordColor.Gray)
@@ -224,7 +268,7 @@ namespace EuDef
                             }
                             catch (UnauthorizedException badBoy)
                             {
-                                Console.WriteLine(member.DisplayName + " has Direct Messages turned off :(");
+                                //Console.WriteLine(member.DisplayName + " has Direct Messages turned off :(");
 
                                 var embedBad = new DiscordEmbedBuilder()
                                     .WithColor(DiscordColor.Gray)

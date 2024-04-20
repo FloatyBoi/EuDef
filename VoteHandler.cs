@@ -13,7 +13,7 @@ namespace EuDef
     {
         public static async Task DoVote(string timeOptionOneName, DateTime timeOptionOne, string timeOptionTwoName, DateTime timeOptionTwo, DateTime endVoteTime, string interactionId, DiscordInteraction interaction)
         {
-            await interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Abstimmung gestartet"));
+            await interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral().WithContent("Abstimmung gestartet"));
 
             var guild = interaction.Guild;
 
@@ -24,22 +24,22 @@ namespace EuDef
                 .AddField(timeOptionTwoName, $"{Formatter.Timestamp(timeOptionTwo, TimestampFormat.LongDateTime)}");
 
             var optionOne = new DiscordButtonComponent(
-                ButtonStyle.Primary,
+                DiscordButtonStyle.Primary,
                 interactionId + "_optionOne",
-                "Erste Option");
+                timeOptionOneName);
 
             var optionTwo = new DiscordButtonComponent(
-                ButtonStyle.Primary,
+                DiscordButtonStyle.Primary,
                 interactionId + "_optionTwo",
-                "Zweite Option");
+                timeOptionTwoName);
 
             var optionBoth = new DiscordButtonComponent(
-                ButtonStyle.Primary,
+                DiscordButtonStyle.Primary,
                 interactionId + "_optionBoth",
                 "Beides Passt");
 
             var status = new DiscordButtonComponent(
-                ButtonStyle.Secondary,
+                DiscordButtonStyle.Secondary,
                 interactionId + "_voteStatus",
                 "Status");
 
@@ -51,7 +51,7 @@ namespace EuDef
             try
             {
                 DiscordForumChannel forumChannel = (DiscordForumChannel)guild.GetChannel(Helpers.GetEventForumID(guild.Id));
-                DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"Abstimmung für nächstes Event").WithMessage(new DiscordMessageBuilder().WithContent(guild.GetRole(Helpers.GetMemberRoleID(guild.Id)).Mention).WithAllowedMentions(new IMention[] { new RoleMention(guild.GetRole(Helpers.GetMemberRoleID(guild.Id))) }).WithEmbed(embed: embed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
+                DiscordForumPostStarter forumPost = await forumChannel.CreateForumPostAsync(new ForumPostBuilder().WithName($"Abstimmung für nächstes Event").WithMessage(new DiscordMessageBuilder().WithContent(guild.GetRole(Helpers.GetMemberRoleID(guild.Id)).Mention).WithAllowedMentions(new IMention[] { new RoleMention(guild.GetRole(Helpers.GetMemberRoleID(guild.Id))) }).AddEmbed(embed: embed).AddComponents(buttons)).WithAutoArchiveDuration(AutoArchiveDuration.Week));
 
                 await File.WriteAllTextAsync(Directory.GetCurrentDirectory() + "//" + guild.Id + "//EventCreationCache" + $"//{interactionId}" + "//forumPostId.txt", forumPost.Channel.Id.ToString());
 
