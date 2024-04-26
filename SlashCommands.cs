@@ -429,6 +429,20 @@ namespace EuDef
 
 			}
 
+			[SlashCommand("longTermSignoff", "Set this channel to the Guild long term signoff channel")]
+			public async Task SetLongTermSignoffChannel(InteractionContext ctx)
+			{
+				Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id);
+				StreamWriter writer = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id, "longTermSignoff_channel.txt"));
+				writer.WriteLine(ctx.Channel.Id);
+				writer.Dispose();
+				await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Succesfully set " + ctx.Channel.Mention + " as the long term signoff channel").AsEphemeral());
+				await PersistentMessageHandler.CheckPersitantMessages(new Dictionary<ulong, DiscordGuild>
+				{
+					{ctx.Guild.Id, ctx.Guild }
+				});
+			}
+
 			[SlashCommand("meetingpoint", "Set this channel to the Guild meeting point channel")]
 			public async Task SetMeetingPoint(InteractionContext ctx, [Option("id", "Id of the voice channel")] string id)
 			{

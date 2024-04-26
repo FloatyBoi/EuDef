@@ -11,6 +11,8 @@ using System.Timers;
 using System.IO;
 using Microsoft.VisualBasic;
 using DSharpPlus.EventArgs;
+using static EuDef.SlashCommands;
+using Newtonsoft.Json;
 
 namespace EuDef
 {
@@ -37,6 +39,8 @@ namespace EuDef
 		{
 			string[] collectionFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "startTimeForCollection.txt", SearchOption.AllDirectories);
 			string[] undecidedReminderFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "remindUndecided.txt", SearchOption.AllDirectories);
+
+			string[] longTermSignoffChannelPaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "longTermSignoff_channel.txt", SearchOption.AllDirectories);
 
 			string[] voteEndFilePaths = Directory.GetFiles(Directory.GetCurrentDirectory(), "endTimeForVote.txt", SearchOption.AllDirectories);
 
@@ -287,6 +291,39 @@ namespace EuDef
 							ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
 						}
 					}
+				}
+			}
+
+			if (longTermSignoffChannelPaths.Length > 0)
+			{
+				foreach (string path in longTermSignoffChannelPaths)
+				{
+					string parentDirectory = path.Replace("\\longTermSignoff_channel.txt", "");
+					string guildIdPath = parentDirectory.Replace("\\", "/");
+					ulong guildId = Convert.ToUInt64(guildIdPath.Substring(guildIdPath.LastIndexOf(@"/") + 1));
+
+
+
+					var guild = await client.GetGuildAsync(guildId);
+					var channel = guild.GetChannel(Convert.ToUInt64(File.ReadAllText(path)));
+					var message = (await channel.GetPinnedMessagesAsync()).FirstOrDefault();
+
+					if (message is null)
+					{
+						break;
+					}
+
+					var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(parentDirectory + "//longTermSignoff.txt"));
+
+					foreach (var user in userData)
+					{
+						if (DateTime.ParseExact(user.Value, "dd.MM.yyyy", CultureInfo.InvariantCulture) < DateTime.UtcNow)
+							userData.Remove(user.Key);
+					}
+
+					File.WriteAllText(parentDirectory + "//longTermSignoff.txt", JsonConvert.SerializeObject(userData));
+
+					await PersistentMessageHandler.UpdateLongTermSignoffMessage(message, userData);
 				}
 			}
 		}

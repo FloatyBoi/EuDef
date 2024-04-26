@@ -23,6 +23,7 @@ namespace EuDef
 		{
 			try
 			{
+				client.GuildDownloadCompleted += async (s, e) => await GuildDownloadCompleted(e);
 				client.GuildMemberAdded += async (s, e) => await GuildMemberAdded(e);
 				client.GuildMemberUpdated += async (s, e) => await GuildMemberUpdated(e);
 				client.GuildMemberRemoved += async (s, e) => await GuildMemberRemoved(e);
@@ -38,6 +39,11 @@ namespace EuDef
 			{
 				ErrorHandler.HandleError(ex, await client.GetGuildAsync(1154741242320658493), ErrorHandler.ErrorType.Error);
 			}
+		}
+
+		private static async Task GuildDownloadCompleted(GuildDownloadCompletedEventArgs e)
+		{
+			await PersistentMessageHandler.CheckPersitantMessages(e.Guilds);
 		}
 
 		private static async Task MessageCreated(MessageCreateEventArgs e)
@@ -381,6 +387,12 @@ namespace EuDef
 					await e.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Rolle entfernt: " + role.Mention).AsEphemeral());
 				}
 			}
+
+			//Long-Term signoff
+			if (buttonType == "addSignoffEntry")
+				await PersistentMessageHandler.UpdateSignoffEntry(buttonId, e, false);
+			if (buttonType == "removeSignoffEntry")
+				await PersistentMessageHandler.UpdateSignoffEntry(buttonId, e, true);
 		}
 
 		private static async Task ClientErrored(ClientErrorEventArgs e)

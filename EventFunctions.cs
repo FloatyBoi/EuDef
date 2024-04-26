@@ -13,6 +13,7 @@ using Microsoft.VisualBasic;
 using DSharpPlus.Interactivity.Extensions;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using Newtonsoft.Json;
 
 namespace EuDef
 {
@@ -332,6 +333,30 @@ namespace EuDef
 			file.Close();
 			file = File.Create(undecidedPath);
 			file.Dispose();
+
+			//Get Long-Term signoffs and apply them
+			var path = Directory.GetCurrentDirectory() + $"//{guild.Id}//longTermSignoff.txt";
+			if (File.Exists(path))
+			{
+				var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
+
+				string[] enumString = new string[userData.Count];
+
+				for (int i = 0; i < userData.Count; i++)
+				{
+					DateTime signoffUntil;
+					DateTime.TryParseExact(userData.ToArray()[i].Value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out signoffUntil);
+
+					if (signoffUntil >= timeAndDateBegin)
+					{
+						enumString[i] = userData.ToArray()[i].Key;
+					}
+				}
+
+				if (enumString[0] is not null)
+					File.AppendAllLines(signoffPath, enumString);
+			}
+
 
 			var createEmbed = new DiscordEmbedBuilder()
 				.WithAuthor(user.Username, user.BannerUrl, user.AvatarUrl)
