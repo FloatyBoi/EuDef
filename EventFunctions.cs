@@ -335,8 +335,9 @@ namespace EuDef
 			file.Dispose();
 
 			//Get Long-Term signoffs and apply them
-			var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
 			var path = Directory.GetCurrentDirectory() + $"//{guild.Id}//longTermSignoff.txt";
+			var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
+
 			if (File.Exists(path))
 			{
 
