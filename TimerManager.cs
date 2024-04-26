@@ -298,10 +298,11 @@ namespace EuDef
 			{
 				foreach (string path in longTermSignoffChannelPaths)
 				{
-					string parentDirectory = path.Replace("\\longTermSignoff_channel.txt", "");
+					string parentDirectory = path.Replace("longTermSignoff_channel.txt", "");
 					parentDirectory = parentDirectory.Replace("\\", "/");
-					ulong guildId = Convert.ToUInt64(parentDirectory.Substring(parentDirectory.LastIndexOf(@"/") + 1));
-
+					string guildIdPath = parentDirectory.Substring(parentDirectory.LastIndexOf(@"/") + 1);
+					guildIdPath = guildIdPath.Replace("/", "");
+					var guildId = Convert.ToUInt64(guildIdPath);
 
 
 					var guild = await client.GetGuildAsync(guildId);
