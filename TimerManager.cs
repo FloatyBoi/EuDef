@@ -299,8 +299,8 @@ namespace EuDef
 				foreach (string path in longTermSignoffChannelPaths)
 				{
 					string parentDirectory = path.Replace("\\longTermSignoff_channel.txt", "");
-					string guildIdPath = parentDirectory.Replace("\\", "/");
-					ulong guildId = Convert.ToUInt64(guildIdPath.Substring(guildIdPath.LastIndexOf(@"/") + 1));
+					parentDirectory = parentDirectory.Replace("\\", "/");
+					ulong guildId = Convert.ToUInt64(parentDirectory.Substring(parentDirectory.LastIndexOf(@"/") + 1));
 
 
 
