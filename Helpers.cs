@@ -266,7 +266,7 @@ namespace EuDef
 			}
 		}
 
-		public static async void NotifyRoleFromEvent(DiscordMessage messageInformation, DiscordRole role, string message, string? eventName, DiscordMessage? Message, DiscordScheduledGuildEvent? discordEvent)
+		public static async void NotifyRoleFromEvent(DiscordMessage messageInformation, DiscordRole role, string message, string? eventName, DiscordMessage? Message, DiscordScheduledGuildEvent? discordEvent, Dictionary<string, string> userData = null)
 		{
 
 
@@ -289,6 +289,11 @@ namespace EuDef
 							break;
 						if (userRole == role && !member.IsBot)
 						{
+							if (userData != null)
+							{
+								if (userData.ContainsKey(member.Id.ToString()))
+									break;
+							}
 							try
 							{
 								await member.SendMessageAsync(embed: notifyEmbed);

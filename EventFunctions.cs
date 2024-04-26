@@ -335,10 +335,11 @@ namespace EuDef
 			file.Dispose();
 
 			//Get Long-Term signoffs and apply them
+			var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
 			var path = Directory.GetCurrentDirectory() + $"//{guild.Id}//longTermSignoff.txt";
 			if (File.Exists(path))
 			{
-				var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
+
 
 				string[] enumString = new string[userData.Count];
 
@@ -380,7 +381,7 @@ namespace EuDef
 
 				var notifyMessage = message.Embeds[0].Fields[1].Value;
 
-				Helpers.NotifyRoleFromEvent(message, notifyRole, notifyMessage, message.Embeds[0].Title, forumPost.Message, discordEvent);
+				Helpers.NotifyRoleFromEvent(message, notifyRole, notifyMessage, message.Embeds[0].Title, forumPost.Message, discordEvent, userData);
 
 			}
 			catch (Exception wellShit)
