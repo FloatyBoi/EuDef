@@ -160,6 +160,15 @@ namespace EuDef
 					{
 						if (Helpers.IsValidDate(response.Result.Values["id-date"], "dd.MM.yyyy"))
 						{
+							var date = DateTime.ParseExact(response.Result.Values["id-date"], "dd.MM.yyyy", CultureInfo.InvariantCulture);
+							var timeDiff = date - DateTime.UtcNow;
+
+							if (timeDiff.Days > 90)
+							{
+								await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Abmeldezeit von {timeDiff.Days} Tagen überschreitet maximale Abmeldezeit von 90 Tagen").AsEphemeral());
+								return;
+							}
+
 							userData.Add(e.User.Id.ToString(), response.Result.Values["id-date"]);
 							File.WriteAllText(path, JsonConvert.SerializeObject(userData));
 
