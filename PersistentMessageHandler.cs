@@ -184,16 +184,29 @@ namespace EuDef
 			}
 
 
-			await UpdateLongTermSignoffMessage(e.Message, userData);
+			await UpdateLongTermSignoffMessage(e.Message, userData, 0);
 		}
 
-		public static async Task UpdateLongTermSignoffMessage(DiscordMessage message, Dictionary<string, string> userData)
+		public static async Task UpdateLongTermSignoffMessage(DiscordMessage message, Dictionary<string, string> userData, int recursionCount)
 		{
+			try
+			{
+				var discordMessage = new DiscordMessageBuilder().AddComponents(message.Components)
+					.AddEmbed(await FormatEmbedForLongTermSignoff(userData, message.Channel.Guild));
 
-			var discordMessage = new DiscordMessageBuilder().AddComponents(message.Components)
-				.AddEmbed(await FormatEmbedForLongTermSignoff(userData, message.Channel.Guild));
-
-			await message.ModifyAsync(discordMessage);
+				await message.ModifyAsync(discordMessage);
+			}
+			catch (Exception e)
+			{
+				if (recursionCount < 10)
+				{
+					await UpdateLongTermSignoffMessage(message, userData, recursionCount + 1);
+				}
+				else
+				{
+					ErrorHandler.HandleError(e, message.Channel.Guild, ErrorHandler.ErrorType.Error);
+				}
+			}
 		}
 	}
 }

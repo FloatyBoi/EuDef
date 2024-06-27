@@ -113,7 +113,7 @@ namespace EuDef
 
 							await guild.GetChannel(Helpers.GetBotChannelID(guildId)).SendMessageAsync(embed);
 						}
-						catch (Exception ex) { ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Warning); }
+						catch (Exception ex) { ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Warning, "Deleting File: " + path); }
 						File.Delete(path);
 
 
@@ -207,7 +207,8 @@ namespace EuDef
 					}
 					catch (Exception ex)
 					{
-						ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Error);
+						ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Error, "Deleting File: " + path);
+						File.Delete(path);
 					}
 				}
 			}
@@ -329,7 +330,7 @@ namespace EuDef
 
 					File.WriteAllText(parentDirectory + "//longTermSignoff.txt", JsonConvert.SerializeObject(userData));
 
-					await PersistentMessageHandler.UpdateLongTermSignoffMessage(message, userData);
+					await PersistentMessageHandler.UpdateLongTermSignoffMessage(message, userData, 0);
 				}
 			}
 		}

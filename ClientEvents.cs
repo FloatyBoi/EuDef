@@ -48,8 +48,8 @@ namespace EuDef
 
 		private static async Task MessageCreated(MessageCreateEventArgs e)
 		{
-			//If message was sent by a bot, return
-			if (e.Author.IsBot || e.Author.IsCurrent)
+			//If message was sent by a bot or is a DM, return
+			if (e.Author.IsBot || e.Author.IsCurrent || e.Channel.IsPrivate)
 				return;
 
 			Dictionary<string, int> userMessageCounts = new Dictionary<string, int>();

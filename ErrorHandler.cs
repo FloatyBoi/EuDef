@@ -10,19 +10,19 @@ namespace EuDef
 {
 	public static class ErrorHandler
 	{
-		public static void HandleError(Exception exception, DiscordGuild guild, ErrorType errorType)
+		public static void HandleError(Exception exception, DiscordGuild guild, ErrorType errorType, string additionalInfo = "")
 		{
 			if (exception is DiscordException)
 			{
-				LogDiscordError((DiscordException)exception, errorType, guild);
+				LogDiscordError((DiscordException)exception, errorType, guild, additionalInfo);
 			}
 			else
 			{
-				LogError(exception, errorType, guild);
+				LogError(exception, errorType, guild, additionalInfo);
 			}
 		}
 
-		private static void LogDiscordError(DiscordException exception, ErrorType errorType, DiscordGuild guild = null)
+		private static void LogDiscordError(DiscordException exception, ErrorType errorType, DiscordGuild guild = null, string additionalInfo = "")
 		{
 			if (errorType == ErrorType.Error)
 			{
@@ -40,7 +40,7 @@ namespace EuDef
 			var embed = new DiscordEmbedBuilder();
 			embed.WithColor(DiscordColor.Red)
 				.WithTitle("Encountered an error!")
-				.AddField("Message", exception.Message);
+				.AddField("Message", exception.Message + "\n" + additionalInfo);
 
 			if (errorType == ErrorType.Warning)
 				embed.WithColor(DiscordColor.Orange).WithTitle("Warning!");
@@ -48,7 +48,7 @@ namespace EuDef
 			guild.GetChannel(Helpers.GetLogChannelID(guild.Id)).SendMessageAsync(embed: embed);
 		}
 
-		private static void LogError(Exception exception, ErrorType errorType, DiscordGuild guild = null)
+		private static void LogError(Exception exception, ErrorType errorType, DiscordGuild guild = null, string additionalInfo = "")
 		{
 			if (errorType == ErrorType.Error)
 			{
@@ -65,7 +65,7 @@ namespace EuDef
 			var embed = new DiscordEmbedBuilder();
 			embed.WithColor(DiscordColor.Red)
 				.WithTitle("Encountered an error!")
-				.AddField("Message", exception.Message);
+				.AddField("Message", exception.Message + "\n" + additionalInfo);
 
 			if (errorType == ErrorType.Warning)
 				embed.WithColor(DiscordColor.Orange).WithTitle("Warning!");

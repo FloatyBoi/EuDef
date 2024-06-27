@@ -104,21 +104,24 @@ namespace EuDef
 						var response = await interactivity.WaitForModalAsync($"id-signoff-reason-{e.Interaction.Id}", user: e.User, timeoutOverride: TimeSpan.FromSeconds(1800));
 						string signoffReason = response.Result.Values["id-reason"];
 
-						DiscordMember member = (DiscordMember)e.User;
+						if (!response.TimedOut)
+						{
+							DiscordMember member = (DiscordMember)e.User;
 
-						var signoffEmbed = new DiscordEmbedBuilder()
-							.WithTitle("Abmeldung")
-							.WithDescription(e.User.Mention + "\n" + e.Message.JumpLink)
-							.WithColor(DiscordColor.Red)
-							.WithAuthor(member.DisplayName, member.AvatarUrl, member.AvatarUrl)
-							.AddField("Grund", signoffReason);
+							var signoffEmbed = new DiscordEmbedBuilder()
+								.WithTitle("Abmeldung")
+								.WithDescription(e.User.Mention + "\n" + e.Message.JumpLink)
+								.WithColor(DiscordColor.Red)
+								.WithAuthor(member.DisplayName, member.AvatarUrl, member.AvatarUrl)
+								.AddField("Grund", signoffReason);
 
-						await e.Guild.GetChannel(Helpers.GetBotChannelID(e.Guild.Id)).SendMessageAsync(signoffEmbed);
+							await e.Guild.GetChannel(Helpers.GetBotChannelID(e.Guild.Id)).SendMessageAsync(signoffEmbed);
 
-						if (HandleRegistration(e, Id, "signoff.txt"))
-							await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Erfolgreich Abgemeldet").AsEphemeral());
-						else
-							await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Anmeldung aufgehoben").AsEphemeral());
+							if (HandleRegistration(e, Id, "signoff.txt"))
+								await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Erfolgreich Abgemeldet").AsEphemeral());
+							else
+								await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Anmeldung aufgehoben").AsEphemeral());
+						}
 					}
 				}
 				catch (Exception ex)

@@ -222,16 +222,20 @@ namespace EuDef
 				await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, modal);
 				var interactivity = ctx.Client.GetInteractivity();
 				var response = await interactivity.WaitForModalAsync($"id-event-edit-{ctx.InteractionId}", user: ctx.User, timeoutOverride: TimeSpan.FromSeconds(1800));
-				var embedBuilder = new DiscordEmbedBuilder(message.Embeds[0]);
-				embedBuilder
-					.WithTitle(response.Result.Values["id-name"])
-					.Description = response.Result.Values["id-description"];
-				var embed = embedBuilder.Build();
-				await message.ModifyAsync(message.Content, embed: embed);
 
-				await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => x.Name = embed.Title);
+				if (!response.TimedOut)
+				{
+					var embedBuilder = new DiscordEmbedBuilder(message.Embeds[0]);
+					embedBuilder
+						.WithTitle(response.Result.Values["id-name"])
+						.Description = response.Result.Values["id-description"];
+					var embed = embedBuilder.Build();
+					await message.ModifyAsync(message.Content, embed: embed);
 
-				await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Editing Event").AsEphemeral());
+					await Helpers.GetThreadChannelByID(channel, id).ModifyAsync(x => x.Name = embed.Title);
+
+					await response.Result.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Editing Event").AsEphemeral());
+				}
 			}
 
 			[SlashCommand("close", "Closes all interactions with this event")]
