@@ -18,9 +18,14 @@ namespace EuDef
 {
 	static class TimerManager
 	{
-		public static void StartTimers(DiscordClient discordClient)
+		public static void StartTimers(DiscordClient discordClient, bool debug)
 		{
-			var thirtySecondTimer = new System.Timers.Timer(30000);
+			System.Timers.Timer thirtySecondTimer;
+
+			if (!debug)
+				thirtySecondTimer = new System.Timers.Timer(30000);
+			else
+				thirtySecondTimer = new System.Timers.Timer(10000);
 
 			try
 			{
@@ -62,7 +67,7 @@ namespace EuDef
 					DateTime dateTime = DateTime.ParseExact(File.ReadAllText(path), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
 					DateTime currentTime = DateTime.UtcNow;
 
-					//Event data collection & sending to bot channel
+					//Event data collection & sending to appropriate channel
 					if (dateTime.AddHours(-2) <= currentTime)
 					{
 
@@ -75,11 +80,11 @@ namespace EuDef
 						string[] signoff = new string[0];
 						string[] undecided = new string[0];
 
-						string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), await client.GetGuildAsync(guildId));
+						string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signup.txt"), await client.GetGuildAsync(guildId), parentDirectory + "//signup.txt");
 						if (!isAusbildung)
 						{
-							signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), await client.GetGuildAsync(guildId));
-							undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), await client.GetGuildAsync(guildId));
+							signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//signoff.txt"), await client.GetGuildAsync(guildId), parentDirectory + "//signoff.txt");
+							undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(parentDirectory + "//undecided.txt"), await client.GetGuildAsync(guildId), parentDirectory + "//undecided.txt");
 						}
 
 						try
@@ -111,13 +116,10 @@ namespace EuDef
 								.AddField($"Unentschieden: {File.ReadAllLines(parentDirectory + "//undecided.txt").Length}", $"------------------------------------------\n{String.Join("\n", undecided)}\n------------------------------------------\n");
 
 
-							await guild.GetChannel(Helpers.GetBotChannelID(guildId)).SendMessageAsync(embed);
+							await guild.GetChannel(Helpers.GetCollectionChannelID(guildId)).SendMessageAsync(embed);
 						}
 						catch (Exception ex) { ErrorHandler.HandleError(ex, await client.GetGuildAsync(guildId), ErrorHandler.ErrorType.Warning, "Deleting File: " + path); }
 						File.Delete(path);
-
-
-
 					}
 				}
 			}
@@ -299,10 +301,13 @@ namespace EuDef
 			{
 				foreach (string path in longTermSignoffChannelPaths)
 				{
+
 					//Console.WriteLine(path);
 					string parentDirectory = path.Replace("longTermSignoff_channel.txt", "");
 					//Console.WriteLine(parentDirectory);
-					parentDirectory = parentDirectory.Replace("\\", "/").Remove(parentDirectory.LastIndexOf("/"));
+					parentDirectory = parentDirectory.Replace("\\", "/");
+					var lastIndex = parentDirectory.LastIndexOf("/");
+					parentDirectory = parentDirectory.Remove(lastIndex);
 					//Console.WriteLine(parentDirectory);
 					string guildIdPath = parentDirectory.Substring(parentDirectory.LastIndexOf(@"/") + 1);
 					//Console.WriteLine(guildIdPath);
@@ -312,25 +317,53 @@ namespace EuDef
 
 
 					var guild = await client.GetGuildAsync(guildId);
-					var channel = guild.GetChannel(Convert.ToUInt64(File.ReadAllText(path)));
-					var message = (await channel.GetPinnedMessagesAsync()).FirstOrDefault();
 
-					if (message is null)
+					try
 					{
-						break;
+
+						var channel = guild.GetChannel(Convert.ToUInt64(File.ReadAllText(path)));
+						var message = (await channel.GetPinnedMessagesAsync()).FirstOrDefault();
+
+						if (message is null)
+						{
+							break;
+						}
+
+						var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(parentDirectory + "//longTermSignoff.txt"));
+
+						if (userData != null)
+						{
+							foreach (var user in userData)
+							{
+								if (DateTime.ParseExact(user.Value, "dd.MM.yyyy", CultureInfo.InvariantCulture) < DateTime.UtcNow)
+								{
+									userData.Remove(user.Key);
+									try
+									{
+										var member = await guild.GetMemberAsync(Convert.ToUInt64(user.Key));
+										await member.SendMessageAsync(
+											new DiscordEmbedBuilder()
+											.WithColor(DiscordColor.Red)
+											.WithTitle("Achtung! Urlaubsmeldung ist ausgelaufen!")
+											.WithDescription($"Die Urlaubsmeldung bis zum {user.Value} ist somit abgelaufen. Bitte erneuere diese falls nötig, oder melde dich selbständig bei kommenden Events."));
+									}
+									catch (Exception ex)
+									{
+										ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Warning);
+									}
+								}
+							}
+
+							File.WriteAllText(parentDirectory + "//longTermSignoff.txt", JsonConvert.SerializeObject(userData));
+
+							await PersistentMessageHandler.UpdateLongTermSignoffMessage(message, userData, 0);
+						}
+
 					}
-
-					var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(parentDirectory + "//longTermSignoff.txt"));
-
-					foreach (var user in userData)
+					catch (Exception ex)
 					{
-						if (DateTime.ParseExact(user.Value, "dd.MM.yyyy", CultureInfo.InvariantCulture) < DateTime.UtcNow)
-							userData.Remove(user.Key);
+						ErrorHandler.HandleError(ex, guild, ErrorHandler.ErrorType.Error);
 					}
-
-					File.WriteAllText(parentDirectory + "//longTermSignoff.txt", JsonConvert.SerializeObject(userData));
-
-					await PersistentMessageHandler.UpdateLongTermSignoffMessage(message, userData, 0);
 				}
 			}
 		}

@@ -19,7 +19,7 @@ namespace EuDef
 
 			var embed = new DiscordEmbedBuilder()
 				.WithTitle("Abstimmung")
-				.WithDescription($"Wann soll das nächste Event stattfinden?\nEndet in: {Formatter.Timestamp(endVoteTime, TimestampFormat.RelativeTime)}")
+				.WithDescription($"Wann soll das nächste Event stattfinden?\nAlle Abstimmungen führen zu automatischer Anmeldung!!!\nEndet in: {Formatter.Timestamp(endVoteTime, TimestampFormat.RelativeTime)}")
 				.AddField(timeOptionOneName, $"{Formatter.Timestamp(timeOptionOne, TimestampFormat.LongDateTime)}")
 				.AddField(timeOptionTwoName, $"{Formatter.Timestamp(timeOptionTwo, TimestampFormat.LongDateTime)}");
 
@@ -82,8 +82,8 @@ namespace EuDef
 				{
 					await e.Interaction.DeferAsync(ephemeral: true);
 
-					string[] optionOne = await Helpers.GetNicknameByIdArray(File.ReadAllLines(optionOnePath), e.Guild);
-					string[] optionTwo = await Helpers.GetNicknameByIdArray(File.ReadAllLines(optionTwoPath), e.Guild);
+					string[] optionOne = await Helpers.GetNicknameByIdArray(File.ReadAllLines(optionOnePath), e.Guild, optionOnePath);
+					string[] optionTwo = await Helpers.GetNicknameByIdArray(File.ReadAllLines(optionTwoPath), e.Guild, optionTwoPath);
 
 
 

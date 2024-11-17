@@ -26,15 +26,25 @@ namespace EuDef
         =====================================================================================================================================================================================
         */
 
-		public static async Task<string[]> GetNicknameByIdArray(string[] iDs, DiscordGuild guild)
+		public static async Task<string[]> GetNicknameByIdArray(string[] iDs, DiscordGuild guild, string path)
 		{
-			string[] nicknames = new string[iDs.Length];
+			var sanitizedIDs = iDs.ToList();
 
-			for (int i = 0; i < iDs.Length; i++)
+			foreach (var id in iDs)
+			{
+				if (string.IsNullOrEmpty(id))
+				{
+					sanitizedIDs.Remove(id);
+				}
+			}
+
+			string[] nicknames = new string[sanitizedIDs.Count];
+
+			for (int i = 0; i < sanitizedIDs.Count; i++)
 			{
 				try
 				{
-					var member = await guild.GetMemberAsync(Convert.ToUInt64(iDs[i]));
+					var member = await guild.GetMemberAsync(Convert.ToUInt64(sanitizedIDs[i]));
 					nicknames[i] = member.DisplayName;
 				}
 				catch (DiscordException e)
@@ -42,6 +52,11 @@ namespace EuDef
 					Console.WriteLine(e.Message);
 					nicknames[i] = "?!NotFound!?";
 				}
+			}
+
+			if (sanitizedIDs.Count != iDs.Length && path != "")
+			{
+				File.WriteAllLines(path, sanitizedIDs);
 			}
 
 			return nicknames;
@@ -85,6 +100,12 @@ namespace EuDef
 		{
 			var botchannelId = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory() + "//" + guildID, "bot_channel.txt"));
 			return Convert.ToUInt64(botchannelId);
+		}
+
+		public static ulong GetCollectionChannelID(ulong guildID)
+		{
+			var collectionChannelId = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory() + "//" + guildID, "collection_channel.txt"));
+			return Convert.ToUInt64(collectionChannelId);
 		}
 
 		public static ulong GetLogChannelID(ulong guildID)

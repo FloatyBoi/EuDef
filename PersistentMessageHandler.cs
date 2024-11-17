@@ -1,6 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
+using DSharpPlus.Exceptions;
 using DSharpPlus.Interactivity.Extensions;
 using Newtonsoft.Json;
 using System;
@@ -85,7 +86,17 @@ namespace EuDef
 			List<string> displayNames = new List<string>();
 
 			foreach (var user in userData)
-				displayNames.Add((await guild.GetMemberAsync(Convert.ToUInt64(user.Key))).DisplayName);
+			{
+				try
+				{
+					displayNames.Add((await guild.GetMemberAsync(Convert.ToUInt64(user.Key))).DisplayName);
+				}
+				catch (NotFoundException ex)
+				{
+					//User probably left guild
+					userData.Remove(user.Key);
+				}
+			}
 
 			var embed = new DiscordEmbedBuilder
 			{
@@ -110,6 +121,9 @@ namespace EuDef
 			{
 				embed.Description = "```\nKeine Abmeldungen\n```";
 			}
+
+			//Update File
+			File.WriteAllText(Directory.GetCurrentDirectory() + $"//{guild.Id}//longTermSignoff.txt", JsonConvert.SerializeObject(userData));
 
 			return embed;
 		}

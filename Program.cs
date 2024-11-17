@@ -56,7 +56,7 @@ namespace EuDef
 
 
 			//Start Timers
-			TimerManager.StartTimers(discordClient);
+			TimerManager.StartTimers(discordClient, debug);
 
 			//Command Registering
 			if (debug)

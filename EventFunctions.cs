@@ -37,11 +37,50 @@ namespace EuDef
 				{
 					await e.Interaction.DeferAsync(ephemeral: true);
 
-					string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signupPath), e.Guild);
-					string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signoffPath), e.Guild);
-					string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(undecidedPath), e.Guild);
+					//JUST FOR longTermSignoff
+					string[] signoff = File.ReadAllLines(signoffPath);
 
+					//Check longTermSignoff for now Entries
+					var path = Directory.GetCurrentDirectory() + $"//{e.Guild.Id}//longTermSignoff.txt";
+					var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
 
+					if (userData != null)
+					{
+						foreach (var userId in userData)
+						{
+							if (!signoff.Contains(userId.Key))
+							{
+								DateTime signoffUntil;
+								DateTime.TryParseExact(userId.Value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out signoffUntil);
+
+								DateTime dateTimeBegin;
+								path = Directory.GetCurrentDirectory() + "//" + e.Guild.Id + "//Events" + $"//{Id}";
+
+								if (File.Exists(path + "//startTimeForCollection.txt"))
+								{
+									dateTimeBegin = DateTime.ParseExact(File.ReadAllText(path + "//startTimeForCollection.txt"), "dd.MM.yyyy,HH:mm", CultureInfo.InvariantCulture);
+								}
+								else
+									dateTimeBegin = DateTime.UtcNow;
+
+								if (signoffUntil >= dateTimeBegin)
+								{
+									var signOffList = signoff.ToList();
+									signOffList.Add(userId.Key);
+									signoff = signOffList.ToArray();
+								}
+
+							}
+
+						}
+
+						//Write updated string to file
+						File.WriteAllLines(signoffPath, signoff);
+					}
+
+					string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signupPath), e.Guild, signupPath);
+					signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(signoffPath), e.Guild, signoffPath);
+					string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(undecidedPath), e.Guild, undecidedPath);
 
 					var embed = new DiscordEmbedBuilder()
 						.WithTitle("Status")
@@ -341,7 +380,7 @@ namespace EuDef
 			var path = Directory.GetCurrentDirectory() + $"//{guild.Id}//longTermSignoff.txt";
 			var userData = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path));
 
-			if (File.Exists(path))
+			if (File.Exists(path) && userData != null)
 			{
 
 
@@ -357,9 +396,11 @@ namespace EuDef
 						enumString[i] = userData.ToArray()[i].Key;
 					}
 				}
-
-				if (enumString[0] is not null)
-					File.AppendAllLines(signoffPath, enumString);
+				if (enumString.Length > 0)
+				{
+					if (enumString[0] is not null)
+						File.AppendAllLines(signoffPath, enumString);
+				}
 			}
 
 

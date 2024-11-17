@@ -292,9 +292,9 @@ namespace EuDef
 					var embed = embedBuilder.Build();
 					await message.ModifyAsync(new DiscordMessageBuilder().WithContent(message.Content).AddEmbed(embed).AddComponents(message.Components));
 
-					string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signup.txt"), ctx.Guild);
-					string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signoff.txt"), ctx.Guild);
-					string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//undecided.txt"), ctx.Guild);
+					string[] signon = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signup.txt"), ctx.Guild, directory + "//signup.txt");
+					string[] signoff = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//signoff.txt"), ctx.Guild, directory + "//signoff.txt");
+					string[] undecided = await Helpers.GetNicknameByIdArray(File.ReadAllLines(directory + "//undecided.txt"), ctx.Guild, directory + "//undecided.txt");
 
 					var noticeEmbed = new DiscordEmbedBuilder()
 								.WithTitle($"Anmeldungen bei Schließung:\n {eventMessage.Embeds[0].Title}")
@@ -416,6 +416,16 @@ namespace EuDef
 				await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Succesfully set " + ctx.Channel.Mention + " as the log channel").AsEphemeral());
 			}
 
+			[SlashCommand("collectionchannel", "Set this channel to the Guild Collection channel")]
+			public async Task SetCollectionChannel(InteractionContext ctx)
+			{
+				Directory.CreateDirectory(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id);
+				StreamWriter writer = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory() + "//" + ctx.Guild.Id, "collection_channel.txt"));
+				writer.WriteLine(ctx.Channel.Id);
+				writer.Dispose();
+				await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Succesfully set " + ctx.Channel.Mention + " as the collection channel").AsEphemeral());
+			}
+
 			[SlashCommand("eventforum", "Set this channel to the Guild Event forum")]
 			public async Task SetEventForum(InteractionContext ctx, [Option("id", "Id of the forum")] string id)
 			{
@@ -469,7 +479,7 @@ namespace EuDef
 		public class SetRole
 		{
 
-			[SlashCommand("member", "Set this role")]
+			[SlashCommand("member", "Set this role as member role")]
 			public async Task SetMemberRole(InteractionContext ctx, [Option("role", "role")] DiscordRole role)
 			{
 
@@ -644,7 +654,7 @@ namespace EuDef
 
 			string[] keysArray = dictionary.Keys.Select(key => key.ToString()).ToArray();
 			string[] lines = new string[dictionary.Count];
-			string[] nicknames = await Helpers.GetNicknameByIdArray(keysArray, ctx.Guild);
+			string[] nicknames = await Helpers.GetNicknameByIdArray(keysArray, ctx.Guild, "");
 			for (int i = 0; i < dictionary.Count; i++)
 			{
 				lines[i] = $"{i + 1}. {nicknames[i]}: {dictionary[keysArray[i]]}";
